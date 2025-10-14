@@ -82,8 +82,23 @@
             box-shadow: 0 4px 8px rgba(0,0,0,0.15);
         }
         .status { text-align: center; margin-top: 15px; color: #28a745; font-weight: 500; height: 20px; }
-        .brand-selector { display: flex; justify-content: center; margin-bottom: 25px; border: 1px solid #dbe2e8; border-radius: 6px; overflow: hidden; }
-        .brand-selector label {
+
+        .selection-group { margin-bottom: 20px; }
+        .selection-group .group-title {
+            display: block;
+            font-weight: 600;
+            color: #3b4d61;
+            margin-bottom: 8px;
+        }
+
+        .pill-toggle {
+            display: flex;
+            gap: 0;
+            border: 1px solid #dbe2e8;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .pill-toggle label {
             flex: 1;
             text-align: center;
             padding: 12px;
@@ -93,7 +108,13 @@
             color: #555;
             transition: background-color 0.2s, color 0.2s;
         }
-        .brand-selector input[type="radio"] { display: none; }
+        .pill-toggle input[type="radio"] { display: none; }
+        .pill-toggle input[type="radio"]:checked + label {
+            background-color: #1a2533;
+            color: #ffffff;
+        }
+
+        .brand-selector { justify-content: center; }
         #charCounter {
             text-align: right;
             color: #555;
@@ -115,39 +136,17 @@
         }
 
         /* --- Custom Search/Select Input --- */
-        .custom-select-container {
-            position: relative;
+        select:disabled {
+            background-color: #eef1f4;
+            color: #7b8794;
+            cursor: not-allowed;
         }
-        .scenario-dropdown {
-            display: none;
-            position: absolute;
-            background-color: #f6f6f6;
-            width: 100%;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            z-index: 1;
-            max-height: 250px;
-            overflow-y: auto;
-            opacity: 0;
-            transform: translateY(-10px);
-            transition: opacity 0.3s ease, transform 0.3s ease;
-        }
-        .scenario-dropdown.show {
-            display: block;
-            opacity: 1;
-            transform: translateY(0);
-        }
-        .scenario-dropdown div {
-            padding: 12px 16px;
-            cursor: pointer;
-            display: block;
-        }
-        .scenario-dropdown div:hover { background-color: #e9e9e9; }
         
         /* --- Theme Styling --- */
         .theme-bt button { background-color: var(--bt-primary); }
         .theme-bt button:hover { background-color: var(--bt-primary-hover); }
         .theme-bt .brand-selector input[type="radio"]:checked + label { background-color: var(--bt-primary); color: white; }
+        .theme-bt .pill-toggle input[type="radio"]:checked + label { background-color: var(--bt-primary); }
         .theme-bt #logo-ee { display: none; }
         .theme-bt #logo-bt { display: block; }
         .theme-bt .feedback-text a { color: var(--bt-primary); }
@@ -155,6 +154,7 @@
         .theme-ee button { background-color: var(--ee-primary); }
         .theme-ee button:hover { background-color: var(--ee-primary-hover); }
         .theme-ee .brand-selector input[type="radio"]:checked + label { background-color: var(--ee-primary); color: white; }
+        .theme-ee .pill-toggle input[type="radio"]:checked + label { background-color: var(--ee-primary); }
         .theme-ee #logo-bt { display: none; }
         .theme-ee #logo-ee { display: block; }
         .theme-ee .feedback-text a { color: var(--ee-primary); }
@@ -174,19 +174,41 @@
                 <text x="0" y="32" font-family="Arial, Helvetica, sans-serif" font-size="40" font-weight="bold" fill="currentColor">EE</text>
             </svg>
         </div>
-        <h1>Pre-Text Generator</h1>
+        <h1>Contact Text Generator</h1>
 
-        <div class="brand-selector">
-            <input type="radio" id="brandBT" name="brand" value="BT" checked>
-            <label for="brandBT">BT</label>
-            <input type="radio" id="brandEE" name="brand" value="EE">
-            <label for="brandEE">EE</label>
+        <div class="selection-group">
+            <span class="group-title">Select your brand</span>
+            <div class="pill-toggle brand-selector">
+                <input type="radio" id="brandBT" name="brand" value="BT" checked>
+                <label for="brandBT">BT</label>
+                <input type="radio" id="brandEE" name="brand" value="EE">
+                <label for="brandEE">EE</label>
+            </div>
         </div>
 
-        <label for="scenarioInput">Select a pre-text reason:</label>
-        <div class="custom-select-container">
-            <input type="text" id="scenarioInput" placeholder="Type or click to select...">
-            <div id="scenarioDropdown" class="scenario-dropdown"></div>
+        <div class="selection-group">
+            <span class="group-title">Message type</span>
+            <div class="pill-toggle">
+                <input type="radio" id="typePre" name="messageType" value="pre" checked>
+                <label for="typePre">Pre-text</label>
+                <input type="radio" id="typePost" name="messageType" value="post">
+                <label for="typePost">Post-text</label>
+            </div>
+        </div>
+
+        <div class="selection-group">
+            <span class="group-title">Was contact made?</span>
+            <div class="pill-toggle">
+                <input type="radio" id="contactNo" name="contactStatus" value="no" checked>
+                <label for="contactNo">No</label>
+                <input type="radio" id="contactYes" name="contactStatus" value="yes">
+                <label for="contactYes">Yes</label>
+            </div>
+        </div>
+
+        <div class="selection-group">
+            <label class="group-title" for="scenarioSelect">Select a reason</label>
+            <select id="scenarioSelect"></select>
         </div>
         
         <textarea id="messageOutput" placeholder="Your generated message will appear here..."></textarea>
@@ -204,53 +226,144 @@
     const copyButton = document.getElementById('copyButton');
     const statusMessage = document.getElementById('statusMessage');
     const brandRadios = document.querySelectorAll('input[name="brand"]');
-    const scenarioInput = document.getElementById('scenarioInput');
-    const scenarioDropdown = document.getElementById('scenarioDropdown');
+    const messageTypeRadios = document.querySelectorAll('input[name="messageType"]');
+    const contactRadios = document.querySelectorAll('input[name="contactStatus"]');
+    const scenarioSelect = document.getElementById('scenarioSelect');
     const charCounter = document.getElementById('charCounter');
 
     let selectedScenarioId = null;
 
-    // --- All pre-text scenarios are stored here ---
+    // --- Scenario definitions grouped by message type and contact status ---
     const scenarios = [
         {
-            id: 'general_call',
+            id: 'pre_no_general_call',
             dropdownText: 'General Account Call',
-            bt_template: `regarding your account. I'll try calling you in the next few minutes from an 0800 number.`,
-            ee_template: `regarding your account. I'll try calling you in the next few minutes from an 0800 number.`
+            type: 'pre',
+            contact: 'no',
+            templates: {
+                BT: `regarding your account. I'll try calling you in the next few minutes from an 0800 number.`,
+                EE: `regarding your account. I'll try calling you in the next few minutes from an 0800 number.`
+            }
         },
         {
-            id: 'order_issue',
+            id: 'pre_no_order_issue',
             dropdownText: 'Issue With Order',
-            bt_template: `we need to discuss an issue with your recent order. I'll be calling you shortly from an 0800 number to go over the details.`,
-            ee_template: `we need to discuss an issue with your recent order. I'll be calling you shortly from an 0800 number to go over the details.`
+            type: 'pre',
+            contact: 'no',
+            templates: {
+                BT: `we need to discuss an issue with your recent order. I'll be calling you shortly from an 0800 number to go over the details.`,
+                EE: `we need to discuss an issue with your recent order. I'll be calling you shortly from an 0800 number to go over the details.`
+            }
         },
         {
-            id: 'order_update',
+            id: 'pre_no_order_update',
             dropdownText: 'Order Progress Update',
-            bt_template: `I'm calling to provide a progress update on your order. I'll try your number in the next few minutes from an 0800 number.`,
-            ee_template: `I'm calling to provide a progress update on your order. I'll try your number in the next few minutes from an 0800 number.`
+            type: 'pre',
+            contact: 'no',
+            templates: {
+                BT: `I'm calling to provide a progress update on your order. I'll try your number in the next few minutes from an 0800 number.`,
+                EE: `I'm calling to provide a progress update on your order. I'll try your number in the next few minutes from an 0800 number.`
+            }
         },
         {
-            id: 'engineer_booking',
+            id: 'pre_no_engineer_booking',
             dropdownText: 'Book Engineer Visit',
-            bt_template: `I'm calling to book in your engineer appointment to get your new service installed. I'll call you in the next few minutes from an 0800 number.`,
-            ee_template: `I'm calling to book in your engineer appointment to get your new service installed. I'll call you in the next few minutes from an 0800 number.`
+            type: 'pre',
+            contact: 'no',
+            templates: {
+                BT: `I'm calling to book in your engineer appointment to get your new service installed. I'll call you in the next few minutes from an 0800 number.`,
+                EE: `I'm calling to book in your engineer appointment to get your new service installed. I'll call you in the next few minutes from an 0800 number.`
+            }
         },
         {
-            id: 'engineer_reminder',
+            id: 'pre_no_engineer_reminder',
             dropdownText: 'Engineer Appointment Reminder',
-            bt_template: `I'm calling with a quick reminder about your scheduled engineer visit. I'll be calling shortly from an 0800 number to confirm the details and answer any questions.`,
-            ee_template: `I'm calling with a quick reminder about your scheduled engineer visit. I'll be calling shortly from an 0800 number to confirm the details and answer any questions.`
+            type: 'pre',
+            contact: 'no',
+            templates: {
+                BT: `I'm calling with a quick reminder about your scheduled engineer visit. I'll be calling shortly from an 0800 number to confirm the details and answer any questions.`,
+                EE: `I'm calling with a quick reminder about your scheduled engineer visit. I'll be calling shortly from an 0800 number to confirm the details and answer any questions.`
+            }
         },
         {
-            id: 'query_follow_up',
+            id: 'pre_no_query_follow_up',
             dropdownText: 'Follow Up On A Query',
-            bt_template: `I'm following up on your recent query. I will be calling you shortly from an 0800 number to discuss this further.`,
-            ee_template: `I'm following up on your recent query. I will be calling you shortly from an 0800 number to discuss this further.`
+            type: 'pre',
+            contact: 'no',
+            templates: {
+                BT: `I'm following up on your recent query. I will be calling you shortly from an 0800 number to discuss this further.`,
+                EE: `I'm following up on your recent query. I will be calling you shortly from an 0800 number to discuss this further.`
+            }
         },
         {
-            id: 'complaint_follow_up',
+            id: 'pre_no_complaint_follow_up',
             dropdownText: 'Follow Up On A Complaint',
+            type: 'pre',
+            contact: 'no',
+            templates: {
+                BT: `regarding your recent complaint. I will be calling you in the next few minutes from an 0800 number to discuss how we can resolve this for you.`,
+                EE: `regarding your recent complaint. I will be calling you in the next few minutes from an 0800 number to discuss how we can resolve this for you.`
+            }
+        },
+        {
+            id: 'pre_yes_follow_up_call',
+            dropdownText: 'Agreed Follow-Up Call',
+            type: 'pre',
+            contact: 'yes',
+            templates: {
+                BT: `thanks for speaking with me earlier today. As agreed, I'll give you another call shortly from an 0800 number to pick up where we left off.`,
+                EE: `thanks for speaking with me earlier today. As agreed, I'll give you another call shortly from an 0800 number to pick up where we left off.`
+            }
+        },
+        {
+            id: 'post_no_callback_request',
+            dropdownText: 'Call Back Request',
+            type: 'post',
+            contact: 'no',
+            templates: {
+                BT: `I tried to reach you today regarding your account. When you can, please call us back on 0800 800 150 so we can help.`,
+                EE: `I tried to reach you today regarding your account. When you can, please call us back on 150 from your EE phone or 0800 079 8586 so we can help.`
+            }
+        },
+        {
+            id: 'post_no_open_complaint',
+            dropdownText: 'Call About Open Complaint On Account',
+            type: 'post',
+            contact: 'no',
+            templates: {
+                BT: `I tried calling about the open complaint on your account. Please call us back on 0800 800 150 so we can talk through the details and next steps with you.`,
+                EE: `I tried calling about the open complaint on your account. Please call us back on 150 from your EE phone or 0800 079 8586 so we can talk through the details and next steps with you.`
+            }
+        },
+        {
+            id: 'post_no_engineer_update',
+            dropdownText: 'Engineer Appointment Update Needed',
+            type: 'post',
+            contact: 'no',
+            templates: {
+                BT: `I tried to reach you with an update about your engineer appointment. Please give us a call on 0800 800 150 so we can confirm the details.`,
+                EE: `I tried to reach you with an update about your engineer appointment. Please give us a call on 150 from your EE phone or 0800 079 8586 so we can confirm the details.`
+            }
+        },
+        {
+            id: 'post_yes_thank_you',
+            dropdownText: 'Thanks After Successful Call',
+            type: 'post',
+            contact: 'yes',
+            templates: {
+                BT: `thanks for speaking with me today. As discussed, if you need any more help please give us a call on 0800 800 150 and we’ll be happy to support.`,
+                EE: `thanks for speaking with me today. As discussed, if you need any more help please give us a call on 150 from your EE phone or 0800 079 8586 and we’ll be happy to support.`
+            }
+        },
+        {
+            id: 'post_yes_follow_up_actions',
+            dropdownText: 'Follow Up With Agreed Actions',
+            type: 'post',
+            contact: 'yes',
+            templates: {
+                BT: `thanks for your time today. We’ve agreed the next steps and I’ll keep an eye on things, but if anything changes please call us on 0800 800 150.`,
+                EE: `thanks for your time today. We’ve agreed the next steps and I’ll keep an eye on things, but if anything changes please call us on 150 from your EE phone or 0800 079 8586.`
+            }
             bt_template: `regarding your recent complaint. I will be calling you in the next few minutes from an 0800 number to discuss how we can resolve this for you.`,
             ee_template: `regarding your recent complaint. I will be calling you in the next few minutes from an 0800 number to discuss how we can resolve this for you.`
         },
@@ -262,40 +375,60 @@
         }
     ];
 
-    // --- Function to populate the dropdown list based on search ---
-    function populateDropdown() {
-        const searchTerm = scenarioInput.value.toLowerCase();
+    function getSelectedBrand() {
+        return document.querySelector('input[name="brand"]:checked').value;
+    }
 
-        // Filter scenarios based on the search term
-        const filteredScenarios = scenarios.filter(scenario => 
-            scenario.dropdownText.toLowerCase().includes(searchTerm)
-        );
+    function getSelectedMessageType() {
+        return document.querySelector('input[name="messageType"]:checked').value;
+    }
 
-        // Sort the filtered scenarios alphabetically
-        filteredScenarios.sort((a, b) => a.dropdownText.localeCompare(b.dropdownText));
+    function getSelectedContactStatus() {
+        return document.querySelector('input[name="contactStatus"]:checked').value;
+    }
 
-        scenarioDropdown.innerHTML = ''; // Clear the current list
-        
+    function populateScenarioOptions() {
+        const selectedType = getSelectedMessageType();
+        const selectedContact = getSelectedContactStatus();
+
+        const filteredScenarios = scenarios
+            .filter(scenario => scenario.type === selectedType && scenario.contact === selectedContact)
+            .sort((a, b) => a.dropdownText.localeCompare(b.dropdownText));
+
+        scenarioSelect.innerHTML = '';
+
+        if (filteredScenarios.length === 0) {
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = 'No scenarios available for this selection';
+            scenarioSelect.appendChild(option);
+            scenarioSelect.disabled = true;
+            selectedScenarioId = null;
+            messageOutput.value = '';
+            updateCharCounter();
+            return;
+        }
+
+        scenarioSelect.disabled = false;
+
+        const preservedScenario = filteredScenarios.find(scenario => scenario.id === selectedScenarioId);
+        const scenarioToSelect = preservedScenario || filteredScenarios[0];
+        selectedScenarioId = scenarioToSelect.id;
+
         filteredScenarios.forEach(scenario => {
-            const item = document.createElement('div');
-            item.textContent = scenario.dropdownText;
-            item.dataset.id = scenario.id;
-            item.addEventListener('click', () => {
-                scenarioInput.value = scenario.dropdownText;
-                selectedScenarioId = scenario.id;
-                scenarioDropdown.classList.remove('show');
-                generateMessage();
-            });
-            scenarioDropdown.appendChild(item);
+            const option = document.createElement('option');
+            option.value = scenario.id;
+            option.textContent = scenario.dropdownText;
+            option.selected = scenario.id === selectedScenarioId;
+            scenarioSelect.appendChild(option);
         });
 
-        // Show the dropdown if there are results
-        scenarioDropdown.classList.toggle('show', filteredScenarios.length > 0);
+        generateMessage();
     }
-    
+
     // --- Function to update the theme (colors and logos) ---
     function updateTheme() {
-        const selectedBrand = document.querySelector('input[name="brand"]:checked').value;
+        const selectedBrand = getSelectedBrand();
         if (selectedBrand === 'BT') {
             container.classList.add('theme-bt');
             container.classList.remove('theme-ee');
@@ -307,20 +440,26 @@
 
     // --- Main function to generate the final message ---
     function generateMessage() {
-        const selectedBrand = document.querySelector('input[name="brand"]:checked').value;
-        const selectedScenario = scenarios.find(s => s.id === selectedScenarioId);
-
-        let message = '';
-        if (selectedScenario) {
-            message = selectedBrand === 'BT' ? selectedScenario.bt_template : selectedScenario.ee_template;
+        if (!selectedScenarioId) {
+            messageOutput.value = '';
+            updateCharCounter();
+            return;
         }
-        
+
+        const selectedScenario = scenarios.find(scenario => scenario.id === selectedScenarioId);
+        if (!selectedScenario) {
+            messageOutput.value = '';
+            updateCharCounter();
+            return;
+        }
+
+        const selectedBrand = getSelectedBrand();
+        const message = selectedScenario.templates[selectedBrand] || '';
         messageOutput.value = message;
 
-        // Update the character counter
         updateCharCounter();
     }
-    
+
     // --- Function to update the character and SMS counter ---
     function updateCharCounter() {
         const charLength = messageOutput.value.length;
@@ -331,53 +470,40 @@
             charCounter.textContent = '';
         }
     }
-    
-    // --- Function to clear the current selection ---
-    function clearSelection() {
-        scenarioInput.value = '';
-        selectedScenarioId = null;
-        generateMessage();
-    }
 
     // --- Event Listeners ---
-    // Run when the page first loads
     document.addEventListener('DOMContentLoaded', () => {
         updateTheme();
-        populateDropdown(); // Populate with all options initially
+        populateScenarioOptions();
     });
 
-    // When brand (BT/EE) is changed
     brandRadios.forEach(radio => radio.addEventListener('change', () => {
         updateTheme();
         generateMessage();
     }));
-    
-    // When typing in the search/select bar
-    scenarioInput.addEventListener('input', populateDropdown);
-    
-    // When clicking the search/select bar
-    scenarioInput.addEventListener('click', () => {
-        if (scenarioInput.value !== '') {
-            clearSelection();
-        }
-        populateDropdown();
-    });
-    
-    // To hide the dropdown when clicking outside of it
-    document.addEventListener('click', (e) => {
-        if (!container.contains(e.target)) {
-            scenarioDropdown.classList.remove('show');
-        }
+
+    messageTypeRadios.forEach(radio => radio.addEventListener('change', () => {
+        selectedScenarioId = null;
+        populateScenarioOptions();
+    }));
+
+    contactRadios.forEach(radio => radio.addEventListener('change', () => {
+        selectedScenarioId = null;
+        populateScenarioOptions();
+    }));
+
+    scenarioSelect.addEventListener('change', () => {
+        selectedScenarioId = scenarioSelect.value || null;
+        generateMessage();
     });
 
-    // When the "Copy Message" button is clicked
     copyButton.addEventListener('click', () => {
         if (messageOutput.value) {
             try {
                 messageOutput.select();
-                messageOutput.setSelectionRange(0, 99999); 
+                messageOutput.setSelectionRange(0, 99999);
                 const successful = document.execCommand('copy');
-                
+
                 if (successful) {
                     statusMessage.textContent = 'Message copied to clipboard!';
                 } else {
@@ -393,8 +519,7 @@
             }
         }
     });
-    
-    // Update counter when user types in the textarea
+
     messageOutput.addEventListener('input', updateCharCounter);
 
 </script>
