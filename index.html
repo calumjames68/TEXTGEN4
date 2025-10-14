@@ -162,7 +162,7 @@
 </head>
 <body>
 
-    <div class="container">
+    <div class="container theme-bt">
         <div class="logo-container">
             <!-- BT Logo SVG -->
             <svg id="logo-bt" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="var(--bt-primary)">
@@ -175,6 +175,34 @@
             </svg>
         </div>
         <h1>Contact Text Generator</h1>
+
+        <div class="selection-group">
+            <span class="group-title">Select your brand</span>
+            <div class="pill-toggle brand-selector">
+                <input type="radio" id="brandBT" name="brand" value="BT" checked>
+                <label for="brandBT">BT</label>
+                <input type="radio" id="brandEE" name="brand" value="EE">
+                <label for="brandEE">EE</label>
+            </div>
+        </div>
+
+        <div class="selection-group">
+            <span class="group-title">Message type</span>
+            <div class="pill-toggle">
+                <input type="radio" id="typePre" name="messageType" value="pre" checked>
+                <label for="typePre">Pre-text</label>
+                <input type="radio" id="typePost" name="messageType" value="post">
+                <label for="typePost">Post-text</label>
+            </div>
+        </div>
+
+        <div class="selection-group">
+            <span class="group-title">Was contact made?</span>
+            <div class="pill-toggle">
+                <input type="radio" id="contactNo" name="contactStatus" value="no" checked>
+                <label for="contactNo">No</label>
+                <input type="radio" id="contactYes" name="contactStatus" value="yes">
+                <label for="contactYes">Yes</label>
 
         <div class="selection-group">
             <span class="group-title">Select your brand</span>
@@ -423,6 +451,7 @@
             scenarioSelect.appendChild(option);
         });
 
+        scenarioSelect.value = selectedScenarioId;
         generateMessage();
     }
 
@@ -472,6 +501,16 @@
     }
 
     // --- Event Listeners ---
+    function initializeInterface() {
+        updateTheme();
+        populateScenarioOptions();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeInterface);
+    } else {
+        initializeInterface();
+    }
     document.addEventListener('DOMContentLoaded', () => {
         updateTheme();
         populateScenarioOptions();
