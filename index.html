@@ -382,19 +382,32 @@
         { id: 'complaint_follow_up', dropdownText: 'Follow Up on a Complaint', bt_template: `regarding your recent complaint. I will be calling you in the next few minutes from an 0800 number to discuss how we can resolve this for you.`, ee_template: `regarding your recent complaint. I will be calling you in the next few minutes from an 0800 number to discuss how we can resolve this for you.` }
       ],
       post: [
-        // ... your other post scenarios unchanged ...
-        // Insert “complaint_logged” with callback logic
+        // (All your previous post scenarios — delays etc.)
+        { id: 'ducting_issue', category: 'Delays', dropdownText: 'External Ducting Issue (12 Weeks)', delayDays: 60, bt_template: `We're sorry to let you know that there are some issues with the external ducting for your BT service, but please be assured we've already tasked our contractors with sorting it out. It's quite a complex job, so we're estimating it may take up to 12 weeks to fully resolve.\n\nHowever, we promise to keep you updated along the way and aim to provide you with an update no later than 9 PM on the {date}.\n\nYou can find a helpful booklet here: https://care.bt.com/next_steps`, ee_template: `We've hit a snag with some external ducting work for your new EE Full Fibre service. It's a tricky issue that our network partners are working to resolve. We expect this to be sorted within 12 weeks.\n\nYour next update will be scheduled for {date}. We're sorry for the delay and appreciate your patience.\n\nAs an EE customer, you can use BT/EE WIFI hotspots for free while you wait. Find out more here: https://ee-wifi.ee.co.uk/public/ee/help/index.htm` },
+        // … (insert all your other delay, setup/general scenarios here exactly as before) …
+        // Now our updated complaint_logged
         {
           id: 'complaint_logged',
           category: 'Set Up / General',
           dropdownText: 'Complaint Logged / Callback',
           delayDays: 0,
           requiresCallback: true,
-          bt_template: `Sorry I missed you today. I was phoning about your recent complaint and will call you back on `,
-          ee_template: `Sorry I missed you today. I was phoning about your recent complaint and will call you back on `,
-          // For No-contact / fallback, same base so user still picks callback
+          bt_template: `Complaint has been logged and our team will process it further.`,
+          ee_template: `Complaint has been logged and our team will process it further.`,
           bt_template_nocontact: `Sorry I missed you today. I was phoning about your recent complaint and will call you back on `,
           ee_template_nocontact: `Sorry I missed you today. I was phoning about your recent complaint and will call you back on `
+        },
+        // Also keep the call_back scenario (for general callback) if you had it
+        {
+          id: 'call_back',
+          category: 'Set Up / General',
+          dropdownText: 'Arrange/Book a Call Back',
+          delayDays: 0,
+          requiresCallback: true,
+          bt_template: `Hi there. I am really sorry for the experience you have had up to now. I want to assure you I will be calling back on `,
+          ee_template: `Hi there. I'm sorry for the experience you've had so far. I want to assure you I will be calling you back on `,
+          bt_template_nocontact: `Sorry I missed you. If you'd still like to speak to us, you can book a call back at a time that suits you here: https://www.bt.com/help/contact-us/callback`,
+          ee_template_nocontact: `Sorry I missed you. If you'd still like to speak to us, you can book a call back at a time that suits you here: https://ee.co.uk/help/contact-ee/callback`
         }
       ]
     };
@@ -519,7 +532,7 @@
         : selectedScenario.ee_template;
 
       if (selections.type === 'post') {
-        // For scenarios with delayDays > 0 and {date}, handle that logic
+        // For delay scenarios that use {date}
         if (selectedScenario.delayDays > 0 && message.includes('{date}')) {
           const startDate = delayStartDateInput.value;
           const useWorking = (selectedScenario.isWorkingDays !== false);
@@ -529,28 +542,49 @@
 
         const hasGreeting = message.toLowerCase().startsWith('hi');
 
-        if (selections.contact === 'No') {
-          if (selectedScenario.bt_template_nocontact && selectedScenario.ee_template_nocontact) {
+        if (selections.scenarioId === 'complaint_logged') {
+          // Special logic for complaint_logged
+          if (selections.contact === 'Yes') {
+            // Contact made: simple acknowledgement
             message = (selections.brand === 'BT')
-              ? selectedScenario.bt_template_nocontact
-              : selectedScenario.ee_template_nocontact;
+              ? selectedScenario.bt_template
+              : selectedScenario.ee_template;
           } else {
-            const unc = message.charAt(0).toLowerCase() + message.slice(1);
-            message = `Sorry I couldn't reach you. ${unc}`;
+            // No contact: fallback to nocontact + callback
+            if (selectedScenario.bt_template_nocontact && selectedScenario.ee_template_nocontact) {
+              message = (selections.brand === 'BT')
+                ? selectedScenario.bt_template_nocontact
+                : selectedScenario.ee_template_nocontact;
+            } else {
+              const unc = message.charAt(0).toLowerCase() + message.slice(1);
+              message = `Sorry I missed you today. ${unc}`;
+            }
           }
-        } else if (selections.contact === 'Yes' && !hasGreeting) {
-          const unc = message.charAt(0).toLowerCase() + message.slice(1);
-          message = `It was great to speak to you today. ${unc}`;
+        } else {
+          // Default logic for other post scenarios
+          if (selections.contact === 'No') {
+            if (selectedScenario.bt_template_nocontact && selectedScenario.ee_template_nocontact) {
+              message = (selections.brand === 'BT')
+                ? selectedScenario.bt_template_nocontact
+                : selectedScenario.ee_template_nocontact;
+            } else {
+              const unc = message.charAt(0).toLowerCase() + message.slice(1);
+              message = `Sorry I couldn't reach you. ${unc}`;
+            }
+          } else if (selections.contact === 'Yes' && !hasGreeting) {
+            const unc = message.charAt(0).toLowerCase() + message.slice(1);
+            message = `It was great to speak to you today. ${unc}`;
+          }
         }
       }
 
       messageOutput.value = message;
 
-      // Show callback options if scenario requires callback
+      // Show callback UI if scenario requires it
       const needsCallback = !!(selectedScenario.requiresCallback);
       callbackOptions.classList.toggle('hidden', !needsCallback);
 
-      // Show delay options only for “Delays” category
+      // Show delay date UI only for delay category
       delayOptions.classList.toggle('hidden',
         !(selectedScenario && selectedScenario.category === 'Delays'));
 
