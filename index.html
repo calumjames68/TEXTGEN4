@@ -1,755 +1,1174 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>BT & EE Text Generator</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
-  <style>
-    :root {
-      --bt-primary: #5514b4;
-      --bt-primary-hover: #441090;
-      --ee-primary: #009999;
-      --ee-primary-hover: #007a7a;
-      --secondary-gray: #6c757d;
-      --secondary-gray-hover: #5a6268;
-    }
-    body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background-color: #f4f7f9;
-      margin: 0;
-      padding: 20px;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      min-height: 100vh;
-    }
-    .container {
-      width: 100%;
-      max-width: 700px;
-      background-color: #ffffff;
-      padding: 30px;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-    .logo-container {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-      height: 50px;
-    }
-    .logo-container svg {
-      height: 100%;
-      width: auto;
-    }
-    h1 {
-      color: black;
-      font-weight: 800;
-      text-align: center;
-      margin-top: 0;
-      margin-bottom: 25px;
-      font-size: 2.25rem;
-    }
-    label {
-      display: block;
-      font-weight: 600;
-      color: #3b4d61;
-      margin-bottom: 8px;
-    }
-    select, textarea, input[type="text"], input[type="date"] {
-      width: 100%;
-      padding: 12px;
-      border: 1px solid #dbe2e8;
-      border-radius: 6px;
-      font-size: 16px;
-      box-sizing: border-box;
-    }
-    textarea {
-      margin-top: 10px;
-      height: 180px;
-      resize: vertical;
-      background-color: #f8f9fa;
-    }
-    .action-buttons {
-      display: flex;
-      gap: 10px;
-      margin-top: 20px;
-    }
-    button {
-      display: block;
-      width: 100%;
-      padding: 15px;
-      margin-top: 0;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 18px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background-color 0.2s, transform 0.2s, box-shadow 0.2s;
-    }
-    button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-    }
-    #resetButton {
-      background-color: var(--secondary-gray);
-    }
-    #resetButton:hover {
-      background-color: var(--secondary-gray-hover);
-    }
-    .status {
-      text-align: center;
-      margin-top: 15px;
-      color: #28a745;
-      font-weight: 500;
-      height: 20px;
-    }
-    .filter-selector {
-      display: flex;
-      justify-content: center;
-      margin-bottom: 15px;
-      border: 1px solid #dbe2e8;
-      border-radius: 6px;
-      overflow: hidden;
-    }
-    .filter-selector label, .filter-selector .button-like {
-      flex: 1;
-      text-align: center;
-      padding: 12px;
-      margin: 0;
-      cursor: pointer;
-      background-color: #f8f9fa;
-      color: #555;
-      transition: background-color 0.2s, color 0.2s;
-      border: none;
-      font-size: 16px;
-      font-family: inherit;
-    }
-    .filter-selector input[type="radio"] {
-      display: none;
-    }
-    .filter-selector input[type="radio"]:checked + label {
-      color: white;
-    }
-    #charCounter {
-      text-align: right;
-      color: #555;
-      font-size: 14px;
-      margin-top: 5px;
-      height: auto;
-    }
-    .feedback-text {
-      text-align: center;
-      margin-top: 20px;
-      font-size: 14px;
-      color: #6c757d;
-    }
-    .feedback-text a {
-      text-decoration: none;
-    }
-    .feedback-text a:hover {
-      text-decoration: underline;
-    }
-    .hidden {
-      display: none;
-    }
-    .step-container {
-      margin-bottom: 15px;
-    }
-    .custom-select-container {
-      position: relative;
-    }
-    .scenario-dropdown {
-      display: none;
-      position: absolute;
-      background-color: #f6f6f6;
-      width: 100%;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      z-index: 1;
-      max-height: 250px;
-      overflow-y: auto;
-    }
-    .scenario-dropdown.show {
-      display: block;
-    }
-    .scenario-dropdown div {
-      padding: 12px 16px;
-      cursor: pointer;
-      display: block;
-    }
-    .scenario-dropdown div:hover {
-      background-color: #e9e9e9;
-    }
-    .scenario-dropdown .category-label {
-      font-weight: bold;
-      padding: 10px 16px 5px;
-      color: #555;
-      font-size: 14px;
-      background-color: #f0f0f0;
-    }
-    .contextual-options {
-      margin-top: 15px;
-      padding: 15px;
-      background-color: #f8f9fa;
-      border-radius: 6px;
-      border: 1px solid #dbe2e8;
-    }
-    .datetime-inputs {
-      display: flex;
-      gap: 10px;
-    }
-    .contextual-options button {
-      margin-top: 10px;
-      padding: 10px;
-      font-size: 14px;
-    }
-    .theme-bt button#copyButton {
-      background-color: var(--bt-primary);
-    }
-    .theme-bt button#copyButton:hover {
-      background-color: var(--bt-primary-hover);
-    }
-    .theme-bt .contextual-options button {
-      background-color: var(--bt-primary);
-    }
-    .theme-bt .contextual-options button:hover {
-      background-color: var(--bt-primary-hover);
-    }
-    .theme-bt .filter-selector input[type="radio"]:checked + label {
-      background-color: var(--bt-primary);
-    }
-    .theme-bt .step-summary {
-      background-color: var(--bt-primary);
-    }
-    .theme-bt #logo-ee {
-      visibility: hidden;
-    }
-    .theme-bt .feedback-text a {
-      color: var(--bt-primary);
-    }
-    .theme-ee button#copyButton {
-      background-color: var(--ee-primary);
-    }
-    .theme-ee button#copyButton:hover {
-      background-color: var(--ee-primary-hover);
-    }
-    .theme-ee .contextual-options button {
-      background-color: var(--ee-primary);
-    }
-    .theme-ee .contextual-options button:hover {
-      background-color: var(--ee-primary-hover);
-    }
-    .theme-ee .filter-selector input[type="radio"]:checked + label {
-      background-color: var(--ee-primary);
-    }
-    .theme-ee .step-summary {
-      background-color: var(--ee-primary);
-    }
-    .theme-ee #logo-bt {
-      visibility: hidden;
-    }
-    .theme-ee .feedback-text a {
-      color: var(--ee-primary);
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bug Board</title>
+    <!-- 1. Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 2. Configure Tailwind for Inter font -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                },
+            },
+        };
+    </script>
+    <!-- 3. Load Google Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- 4. Load Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        /* Simple modal styles */
+        .modal {
+            transition: opacity 0.25s ease;
+        }
+        .modal-content {
+            transition: transform 0.25s ease;
+        }
+
+        /* Sidebar transition styles */
+        #sidebar {
+            transition: transform 0.3s ease-in-out;
+        }
+        #sidebar-overlay {
+            transition: opacity 0.3s ease-in-out;
+        }
+    </style>
 </head>
-<body>
-  <div id="appContainer" class="container">
-    <div class="logo-container">
-      <svg id="logo-bt" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="#5514b4">
-        <circle cx="50" cy="50" r="48" stroke="#5514b4" stroke-width="4" fill="none"/>
-        <text x="50" y="68" font-family="Arial, Helvetica, sans-serif" font-size="50" font-weight="bold" text-anchor="middle" fill="#5514b4">BT</text>
-      </svg>
-      <svg id="logo-ee" viewBox="0 0 80 40" xmlns="http://www.w3.org/2000/svg" fill="#009999">
-        <text x="0" y="32" font-family="Arial, Helvetica, sans-serif" font-size="40" font-weight="bold" fill="#009999">EE</text>
-      </svg>
-    </div>
-    <h1>Text Generator</h1>
-
-    <!-- Step 1: Brand -->
-    <div id="step-brand" class="step-container">
-      <div id="summary-brand" class="step-summary hidden"></div>
-      <div id="content-brand" class="step-content">
-        <label>Select a brand:</label>
-        <div class="filter-selector">
-          <input type="radio" id="brandBT" name="brand" value="BT" />
-          <label for="brandBT">BT</label>
-          <input type="radio" id="brandEE" name="brand" value="EE" />
-          <label for="brandEE">EE</label>
+<body class="font-sans bg-slate-100 text-slate-800 min-h-screen">
+    
+    <!-- Sidebar -->
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 opacity-0 pointer-events-none"></div>
+    <div id="sidebar" class="fixed top-0 left-0 w-64 h-full bg-white shadow-lg z-40 transform -translate-x-full flex flex-col">
+        <div class="p-5 flex-grow">
+            <h2 class="text-2xl font-semibold text-blue-700 mb-6">Bug Board</h2>
+            <nav class="space-y-2">
+                <button data-page="submit" class="nav-link w-full text-left p-3 rounded-lg font-medium text-slate-700 hover:bg-slate-100">Submit New Issue</button>
+                <button data-page="pending" class="nav-link w-full text-left p-3 rounded-lg font-medium text-slate-700 hover:bg-slate-100">Pending Issues</button>
+                <button data-page="known" class="nav-link w-full text-left p-3 rounded-lg font-medium text-slate-700 hover:bg-slate-100">Known Issues</button>
+                <button data-page="completed" class="nav-link w-full text-left p-3 rounded-lg font-medium text-slate-700 hover:bg-slate-100">Completed Issues</button>
+                <button data-page="metrics" class="nav-link w-full text-left p-3 rounded-lg font-medium text-slate-700 hover:bg-slate-100">Metrics</button>
+            </nav>
         </div>
-      </div>
-    </div>
-
-    <!-- Step 2: Pre or Post -->
-    <div id="step-type" class="step-container hidden">
-      <div id="summary-type" class="step-summary hidden"></div>
-      <div id="content-type" class="step-content">
-        <label>What type of message are you sending?</label>
-        <div class="filter-selector">
-          <input type="radio" id="typePre" name="type" value="pre" />
-          <label for="typePre">Pre-Text</label>
-          <input type="radio" id="typePost" name="type" value="post" />
-          <label for="typePost">Post-Text</label>
+        <!-- Log Out Button -->
+        <div class="p-5 border-t border-slate-200">
+            <button id="logout-btn" class="w-full text-left p-3 rounded-lg font-medium text-slate-500 hover:bg-red-50 hover:text-red-600">
+                Log Out / Switch Role
+            </button>
         </div>
-      </div>
     </div>
 
-    <!-- Step 3: Post‑Text Category -->
-    <div id="step-category" class="step-container hidden">
-      <div id="summary-category" class="step-summary hidden"></div>
-      <div id="content-category" class="step-content">
-        <label>Select a category:</label>
-        <div class="filter-selector">
-          <input type="radio" id="catAll" name="category" value="All" />
-          <label for="catAll">All</label>
-          <input type="radio" id="catDelays" name="category" value="Delays" />
-          <label for="catDelays">Delays</label>
-          <input type="radio" id="catSetUps" name="category" value="Set Up / General" />
-          <label for="catSetUps">Set Up / General</label>
+    <!-- ADDED: App Loader Screen -->
+    <div id="app-loader" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-100 hidden">
+        <div class="text-center">
+            <svg class="animate-spin h-8 w-8 text-blue-600 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <h3 class="text-xl font-semibold text-slate-700">Loading Bug Board...</h3>
         </div>
-      </div>
     </div>
 
-    <!-- Step 4: Contact status (Post only) -->
-    <div id="step-contact" class="step-container hidden">
-      <div id="summary-contact" class="step-summary hidden"></div>
-      <div id="content-contact" class="step-content">
-        <label>Was contact made with the customer?</label>
-        <div class="filter-selector">
-          <input type="radio" id="contactYes" name="contactStatus" value="Yes" />
-          <label for="contactYes">Contact Made</label>
-          <input type="radio" id="contactNo" name="contactStatus" value="No" />
-          <label for="contactNo">No Contact</label>
+    <!-- App Wrapper -->
+    <div class="flex flex-col min-h-screen">
+        
+        <!-- Header -->
+        <header class="sticky top-0 bg-white shadow-md z-20">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+                    <!-- Left: Hamburger Menu -->
+                    <div class="flex items-center">
+                        <button id="hamburger-btn" class="p-2 text-slate-600 hover:text-slate-900">
+                            <!-- Hamburger Icon SVG -->
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+                            </svg>
+                        </button>
+                        <h1 id="header-title" class="text-2xl font-bold text-blue-700 ml-4">Submit New Issue</h1>
+                    </div>
+                    <!-- Right: User EIN & Logout -->
+                    <div class="flex items-center space-x-4">
+                        <div class="text-sm">
+                            User EIN: <strong id="user-ein-display" class="text-slate-900">Loading...</strong>
+                        </div>
+                        <!-- Logout Button -->
+                        <button id="header-logout-btn" class="p-2 text-slate-500 hover:text-red-600" title="Log Out / Switch Role">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="flex-grow p-4 md:p-8">
+            <div class="max-w-7xl mx-auto">
+
+                <!-- Page 1: Submit Ticket (TL View) -->
+                <div id="page-submit" class="page-content">
+                    <section class="max-w-xl mx-auto bg-white p-6 rounded-lg shadow-md">
+                        <form id="new-ticket-form">
+                            <div class="mb-4">
+                                <label for="ticket-title" class="block text-sm font-medium text-slate-700 mb-1">Issue Title</label>
+                                <input type="text" id="ticket-title" placeholder="e.g., 'Login button not working'" class="w-full p-2 border border-slate-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500" required>
+                            </div>
+                            <div class="mb-4">
+                                <label for="ticket-desc" class="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                                <textarea id="ticket-desc" rows="4" placeholder="Describe the issue in detail..." class="w-full p-2 border border-slate-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500" required></textarea>
+                            </div>
+                            <!-- MODIFIED: EIN field will be auto-filled -->
+                            <div class="mb-4">
+                                <label for="ticket-ein" class="block text-sm font-medium text-slate-700 mb-1">Your EIN</label>
+                                <input type="text" id="ticket-ein" class="w-full p-2 border border-slate-300 rounded-lg shadow-sm bg-slate-100" readonly required>
+                            </div>
+                            <div class="mb-4">
+                                <label for="ticket-code" class="block text-sm font-medium text-slate-700 mb-1">Unique Code</label>
+                                <input type="text" id="ticket-code" placeholder="e.g., 'ALPHA123'" class="w-full p-2 border border-slate-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500" required>
+                            </div>
+                            <button type="submit" class="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-blue-700 transition duration-150">
+                                Submit Issue
+                            </button>
+                        </form>
+                    </section>
+                </div>
+
+                <!-- Page 2: New Issues (Admin View) -->
+                <div id="page-pending" class="page-content hidden">
+                    <section class="bg-white p-6 rounded-lg shadow-md">
+                        <p class="text-sm text-slate-500 mb-4">Approve pending issues to make them "Known".</p>
+                        <div id="new-tickets-list" class="space-y-4">
+                            <!-- New tickets will be injected here by JS -->
+                            <p class="text-slate-400">No new issues...</p>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Page 3: Known Issues (Guide View) -->
+                <!-- UPDATED SECTION -->
+                <div id="page-known" class="page-content hidden">
+                    <p class="text-sm text-slate-500 mb-4">Guides can report if they are affected. Lists are sorted by most affected.</p>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        
+                        <!-- Column 1: Persistent Issues -->
+                        <section class="bg-white p-6 rounded-lg shadow-md">
+                            <h2 class="text-xl font-semibold text-blue-700 mb-4">Persistent Issues</h2>
+                            <div id="persistent-issues-list" class="space-y-4">
+                                <!-- Persistent tickets will be injected here by JS -->
+                                <p class="text-slate-400">No persistent issues...</p>
+                            </div>
+                        </section>
+                        
+                        <!-- Column 2: New & Important Issues -->
+                        <section class="bg-white p-6 rounded-lg shadow-md">
+                            <h2 class="text-xl font-semibold text-red-600 mb-4">New & Important Issues</h2>
+                            <div id="new-issues-list" class="space-y-4">
+                                <!-- New/non-persistent known tickets will be injected here by JS -->
+                                <p class="text-slate-400">No new known issues...</p>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+                <!-- END UPDATED SECTION -->
+
+                <!-- Page 4: Completed Issues (Archive) -->
+                <div id="page-completed" class="page-content hidden">
+                    <section class="bg-white p-6 rounded-lg shadow-md">
+                        <p class="text-sm text-slate-500 mb-4">Resolved issues are stored here.</p>
+                        <div id="completed-tickets-list" class="space-y-4">
+                            <!-- Completed tickets will be injected here by JS -->
+                            <p class="text-slate-400">No completed issues...</p>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Page 5: Metrics Section -->
+                <div id="page-metrics" class="page-content hidden">
+                    <section class="bg-white p-6 rounded-lg shadow-md">
+                        <!-- Top row: Summary boxes -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+                            <!-- Metric Display 1 -->
+                            <div class="p-4 bg-purple-100 rounded-lg">
+                                <div class="text-sm text-purple-800">Total "Affected" Reports</div>
+                                <div id="metric-total-affected" class="text-3xl font-bold text-purple-900">0</div>
+                            </div>
+                            <!-- Metric Display 2 -->
+                            <div class="p-4 bg-blue-100 rounded-lg">
+                                <div class="text-sm text-blue-800">Unique Affected Guides</div>
+                                <div id="metric-unique-affected" class="text-3xl font-bold text-blue-900">0</div>
+                            </div>
+                        </div>
+
+                        <!-- Bottom row: Top 5 List and Chart -->
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            <!-- Column 1: Top 5 List -->
+                            <div>
+                                <h3 class="text-xl font-semibold mb-4 text-slate-800">Top 5 Most Affected Issues</h3>
+                                <div id="top-5-list" class="space-y-3">
+                                    <!-- JS will populate this -->
+                                    <p class="text-slate-400">No issues to display...</p>
+                                </div>
+                            </div>
+                            <!-- Column 2: Chart -->
+                            <div>
+                                <h3 class="text-xl font-semibold mb-4 text-slate-800">Issue Vote Distribution</h3>
+                                <div class="relative w-full max-w-md mx-auto">
+                                    <canvas id="metrics-pie-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- "I've been affected" Modal -->
+    <div id="affected-modal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 opacity-0 pointer-events-none">
+        <div class="modal-content bg-white w-full max-w-md p-6 rounded-lg shadow-xl transform scale-95">
+            <h3 class="text-xl font-semibold mb-4">Report Affected Issue</h3>
+            <form id="affected-form">
+                <input type="hidden" id="affected-ticket-id">
+                <!-- New Error Message Div -->
+                <div id="modal-error-msg" class="text-red-600 text-sm mb-3 hidden"></div>
+                <!-- MODIFIED: EIN field will be auto-filled -->
+                <div class="mb-4">
+                    <label for="affected-ein" class="block text-sm font-medium text-slate-700 mb-1">Your EIN</label>
+                    <input type="text" id="affected-ein" class="w-full p-2 border border-slate-300 rounded-lg shadow-sm bg-slate-100" readonly required>
+                </div>
+                <div class="mb-4">
+                    <label for="affected-comments" class="block text-sm font-medium text-slate-700 mb-1">Comments (Optional)</label>
+                    <textarea id="affected-comments" rows="3" placeholder="Any additional details..." class="w-full p-2 border border-slate-300 rounded-lg shadow-sm"></textarea>
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button type="button" id="modal-cancel-btn" class="bg-slate-200 text-slate-800 font-semibold py-2 px-4 rounded-lg hover:bg-slate-300 transition">
+                        Cancel
+                    </button>
+                    <button type="submit" class="bg-yellow-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-yellow-600 transition">
+                        Submit Report
+                    </button>
+                </div>
+            </form>
         </div>
-      </div>
     </div>
-
-    <!-- Final: Scenario & Message -->
-    <div id="step-scenario" class="hidden">
-      <label for="scenarioInput">Select a message template:</label>
-      <div class="custom-select-container">
-        <input type="text" id="scenarioInput" placeholder="Type or click to select..." />
-        <div id="scenarioDropdown" class="scenario-dropdown"></div>
-      </div>
-
-      <div id="delay-options" class="contextual-options hidden">
-        <label for="delayStartDate">Delay Identified On:</label>
-        <input type="date" id="delayStartDate" />
-      </div>
-
-      <textarea id="messageOutput" placeholder="Your generated message will appear here..."></textarea>
-      <div id="charCounter"></div>
-
-      <div id="callback-options" class="contextual-options hidden">
-        <label>Select Date and Time for Callback:</label>
-        <div class="datetime-inputs">
-          <input type="date" id="callbackDate" />
-          <select id="callbackTime"></select>
+    
+    <!-- NEW: Role Login Modal (Re-designed) -->
+    <div id="login-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-100">
+        <div class="bg-white w-full max-w-sm p-8 rounded-lg shadow-xl">
+            <h3 class="text-2xl font-semibold mb-6 text-center text-blue-700">Welcome to Bug Board</h3>
+            
+            <form id="login-form" class="space-y-4">
+                <div>
+                    <label for="ein-input" class="block text-sm font-medium text-slate-700 mb-2">Your EIN</label>
+                    <input type="text" id="ein-input" placeholder="e.g., 12345" class="w-full p-3 border border-slate-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500" required>
+                </div>
+                <div>
+                    <label for="tl-code-input" class="block text-sm font-medium text-slate-700 mb-2">Unique Code (if you are a TL)</label>
+                    <input type="password" id="tl-code-input" placeholder="Optional TL Code" class="w-full p-3 border border-slate-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                
+                <div id="login-error-msg" class="text-red-600 text-sm pt-1 hidden"></div>
+                
+                <button type="submit" class="w-full bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:bg-blue-700 transition duration-150 mt-4">
+                    Login
+                </button>
+            </form>
         </div>
-        <button id="insertDateTime">Insert Date & Time</button>
-      </div>
-
-      <div class="action-buttons">
-        <button id="copyButton">Copy Message</button>
-        <button id="resetButton">Reset</button>
-      </div>
-      <div id="statusMessage" class="status"></div>
     </div>
 
-    <p class="feedback-text" style="font-style: italic; margin-top: 25px; margin-bottom: -15px;">
-      This is just a rough draft and is subject to change.
-    </p>
-    <p class="feedback-text">
-      Any feedback is welcome, please email me:
-      <a href="mailto:calumbarnes@ee.co.uk">calumbarnes@ee.co.uk</a>
-    </p>
-  </div>
+    <!-- 5. Firebase SDKs -->
+    <script type="module">
+        // Import Firebase modules
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { 
+            getAuth, 
+            signInAnonymously, 
+            // signInWithCustomToken, // Removed for GitHub version
+            onAuthStateChanged 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            collection, 
+            doc,
+            getDoc,
+            addDoc, 
+            setDoc, 
+            updateDoc, 
+            onSnapshot, 
+            serverTimestamp,
+            query,
+            setLogLevel,
+            where,
+            getDocs
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-  <script>
-    const scenarios = {
-      pre: [
-        { id: 'general_call', dropdownText: 'General Account Call', bt_template: `regarding your account. I'll try calling you in the next few minutes from an 0800 number.`, ee_template: `regarding your account. I'll try calling you in the next few minutes from an 0800 number.` },
-        { id: 'order_issue', dropdownText: 'Issue with Order', bt_template: `we need to discuss an issue with your recent order. I'll be calling you shortly from an 0800 number to go over the details.`, ee_template: `we need to discuss an issue with your recent order. I'll be calling you shortly from an 0800 number to go over the details.` },
-        { id: 'order_update', dropdownText: 'Order Progress Update', bt_template: `I'm calling to provide a progress update on your order. I'll try your number in the next few minutes from an 0800 number.`, ee_template: `I'm calling to provide a progress update on your order. I'll try your number in the next few minutes from an 0800 number.` },
-        { id: 'engineer_booking', dropdownText: 'Book Engineer Visit', bt_template: `I'm calling to book in your engineer appointment to get your new service installed. I'll call you in the next few minutes from an 0800 number.`, ee_template: `I'm calling to book in your engineer appointment to get your new service installed. I'll call you in the next few minutes from an 0800 number.` },
-        { id: 'engineer_reminder', dropdownText: 'Engineer Appointment Reminder', bt_template: `I'm calling with a quick reminder about your scheduled engineer visit. I'll be calling shortly from an 0800 number to confirm the details and answer any questions.`, ee_template: `I'm calling with a quick reminder about your scheduled engineer visit. I'll be calling shortly from an 0800 number to confirm the details and answer any questions.` },
-        { id: 'query_follow_up', dropdownText: 'Follow Up on a Query', bt_template: `I'm following up on your recent query. I will be calling you shortly from an 0800 number to discuss this further.`, ee_template: `I'm following up on your recent query. I will be calling you shortly from an 0800 number to discuss this further.` },
-        { id: 'complaint_follow_up', dropdownText: 'Follow Up on a Complaint', bt_template: `regarding your recent complaint. I will be calling you in the next few minutes from an 0800 number to discuss how we can resolve this for you.`, ee_template: `regarding your recent complaint. I will be calling you in the next few minutes from an 0800 number to discuss how we can resolve this for you.` }
-      ],
-      post: [
-        // (All your previous post scenarios — delays etc.)
-        { id: 'ducting_issue', category: 'Delays', dropdownText: 'External Ducting Issue (12 Weeks)', delayDays: 60, bt_template: `We're sorry to let you know that there are some issues with the external ducting for your BT service, but please be assured we've already tasked our contractors with sorting it out. It's quite a complex job, so we're estimating it may take up to 12 weeks to fully resolve.\n\nHowever, we promise to keep you updated along the way and aim to provide you with an update no later than 9 PM on the {date}.\n\nYou can find a helpful booklet here: https://care.bt.com/next_steps`, ee_template: `We've hit a snag with some external ducting work for your new EE Full Fibre service. It's a tricky issue that our network partners are working to resolve. We expect this to be sorted within 12 weeks.\n\nYour next update will be scheduled for {date}. We're sorry for the delay and appreciate your patience.\n\nAs an EE customer, you can use BT/EE WIFI hotspots for free while you wait. Find out more here: https://ee-wifi.ee.co.uk/public/ee/help/index.htm` },
-        // … (insert all your other delay, setup/general scenarios here exactly as before) …
-        // Now our updated complaint_logged
-        {
-          id: 'complaint_logged',
-          category: 'Set Up / General',
-          dropdownText: 'Complaint Logged / Callback',
-          delayDays: 0,
-          requiresCallback: true,
-          bt_template: `Complaint has been logged and our team will process it further.`,
-          ee_template: `Complaint has been logged and our team will process it further.`,
-          bt_template_nocontact: `Sorry I missed you today. I was phoning about your recent complaint and will call you back on `,
-          ee_template_nocontact: `Sorry I missed you today. I was phoning about your recent complaint and will call you back on `
-        },
-        // Also keep the call_back scenario (for general callback) if you had it
-        {
-          id: 'call_back',
-          category: 'Set Up / General',
-          dropdownText: 'Arrange/Book a Call Back',
-          delayDays: 0,
-          requiresCallback: true,
-          bt_template: `Hi there. I am really sorry for the experience you have had up to now. I want to assure you I will be calling back on `,
-          ee_template: `Hi there. I'm sorry for the experience you've had so far. I want to assure you I will be calling you back on `,
-          bt_template_nocontact: `Sorry I missed you. If you'd still like to speak to us, you can book a call back at a time that suits you here: https://www.bt.com/help/contact-us/callback`,
-          ee_template_nocontact: `Sorry I missed you. If you'd still like to speak to us, you can book a call back at a time that suits you here: https://ee.co.uk/help/contact-ee/callback`
+        // --- GLOBAL VARIABLES ---
+        let db, auth;
+        let userId = null; // Firebase anonymous auth ID
+        let userEIN = null;  // User's saved EIN
+        let userRole = null; // User's role ('guide' or 'tl')
+        let ticketsCollectionRef;
+        // const appId = typeof __app_id !== 'undefined' ? __app_id : 'bug-board-default'; // Removed for GitHub version
+        
+        // Use a simple root collection path for your own database
+        const ticketsCollectionPath = `tickets`;
+        
+        let globalSnapshot = null; // To store the latest data for metric re-calculation
+        let currentPage = null; // To track the visible page. Will be set by login logic.
+        let metricsChart = null; // To store the Chart.js instance
+
+        // Page titles for header
+        const pageTitles = {
+            'submit': 'Submit New Issue',
+            'pending': 'Pending Issues',
+            'known': 'Known Issues',
+            'completed': 'Completed Issues',
+            'metrics': 'Metrics'
+        };
+
+        // --- DOM Elements ---
+        const newTicketForm = document.getElementById('new-ticket-form');
+        const newTicketsList = document.getElementById('new-tickets-list');
+        // UPDATED: Get the two new lists for Known Issues
+        const persistentIssuesList = document.getElementById('persistent-issues-list');
+        const newIssuesList = document.getElementById('new-issues-list');
+        const completedTicketsList = document.getElementById('completed-tickets-list');
+        
+        // Metric DOM Elements
+        const metricTotalAffected = document.getElementById('metric-total-affected');
+        const metricUniqueAffected = document.getElementById('metric-unique-affected');
+        const top5List = document.getElementById('top-5-list');
+        const chartCanvas = document.getElementById('metrics-pie-chart');
+        
+        // Modal DOM Elements
+        const affectedModal = document.getElementById('affected-modal');
+        const modalCancelBtn = document.getElementById('modal-cancel-btn');
+        const affectedForm = document.getElementById('affected-form');
+        const affectedTicketIdInput = document.getElementById('affected-ticket-id');
+        const affectedEinInput = document.getElementById('affected-ein'); // Modal EIN input
+        const affectedCommentsInput = document.getElementById('affected-comments');
+
+        // New Nav DOM Elements
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebar-overlay');
+        const hamburgerBtn = document.getElementById('hamburger-btn');
+        const navLinks = document.querySelectorAll('.nav-link');
+        const pageContents = document.querySelectorAll('.page-content');
+        const headerTitle = document.getElementById('header-title');
+        const submitNavBtn = document.querySelector('.nav-link[data-page="submit"]');
+        const logoutBtn = document.getElementById('logout-btn');
+        const headerLogoutBtn = document.getElementById('header-logout-btn'); // Header logout button
+
+        // NEW Login Modal DOM Elements
+        const loginModal = document.getElementById('login-modal');
+        const loginForm = document.getElementById('login-form');
+        const einInput = document.getElementById('ein-input');
+        const tlCodeInput = document.getElementById('tl-code-input');
+        const loginErrorMsg = document.getElementById('login-error-msg');
+        const appLoader = document.getElementById('app-loader'); // ADDED
+        
+        // Header Display
+        const userEinDisplay = document.getElementById('user-ein-display');
+        
+        // Form inputs to auto-fill
+        const ticketEinInput = document.getElementById('ticket-ein'); // Submit form EIN input
+
+        // --- HELPER FUNCTIONS ---
+
+        /**
+         * Formats a timestamp into a relative time string (e.g., "2 hours ago")
+         */
+        function formatTimeAgo(timestamp) {
+            if (!timestamp) return '...';
+            const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp); // Handle JS Dates too
+            const seconds = Math.floor((new Date() - date) / 1000);
+            
+            let interval = seconds / 31536000;
+            if (interval > 1) return Math.floor(interval) + " years ago";
+            interval = seconds / 2592000;
+            if (interval > 1) return Math.floor(interval) + " months ago";
+            interval = seconds / 86400;
+            if (interval > 1) return Math.floor(interval) + " days ago";
+            interval = seconds / 3600;
+            if (interval > 1) return Math.floor(interval) + " hours ago";
+            interval = seconds / 60;
+            if (interval > 1) return Math.floor(interval) + " minutes ago";
+            return "Just now";
         }
-      ]
-    };
 
-    const selections = {
-      type: null,
-      brand: null,
-      category: null,
-      contact: null,
-      scenarioId: null
-    };
+        /**
+         * Shows the "I've been affected" modal
+         */
+        function showModal(ticketId) {
+            // Clear any old error messages
+            const errorMsg = document.getElementById('modal-error-msg');
+            errorMsg.textContent = '';
+            errorMsg.classList.add('hidden');
 
-    const appContainer = document.getElementById('appContainer');
-    const stepElements = {
-      brand: document.getElementById('step-brand'),
-      type: document.getElementById('step-type'),
-      category: document.getElementById('step-category'),
-      contact: document.getElementById('step-contact'),
-      scenario: document.getElementById('step-scenario')
-    };
-    const messageOutput = document.getElementById('messageOutput');
-    const scenarioInput = document.getElementById('scenarioInput');
-    const scenarioDropdown = document.getElementById('scenarioDropdown');
-    const charCounter = document.getElementById('charCounter');
-    const delayOptions = document.getElementById('delay-options');
-    const callbackOptions = document.getElementById('callback-options');
-    const copyButton = document.getElementById('copyButton');
-    const resetButton = document.getElementById('resetButton');
-    const statusMessage = document.getElementById('statusMessage');
-    const delayStartDateInput = document.getElementById('delayStartDate');
-    const callbackDateInput = document.getElementById('callbackDate');
-    const callbackTimeInput = document.getElementById('callbackTime');
-    const insertDateTimeButton = document.getElementById('insertDateTime');
+            // Auto-fill EIN
+            affectedEinInput.value = userEIN;
 
-    function updateUI() {
-      const { type, brand, category, contact } = selections;
-
-      appContainer.classList.toggle('theme-bt', brand === 'BT');
-      appContainer.classList.toggle('theme-ee', brand === 'EE');
-
-      stepElements.brand.classList.remove('hidden');
-      stepElements.type.classList.toggle('hidden', !brand);
-      stepElements.category.classList.toggle('hidden', type !== 'post');
-      stepElements.contact.classList.toggle('hidden', !(type === 'post' && category));
-
-      const showScenario = (type === 'pre' && !!brand) || (type === 'post' && !!contact);
-      stepElements.scenario.classList.toggle('hidden', !showScenario);
-
-      if (!showScenario) {
-        clearScenarioSelection();
-      } else {
-        populateDropdown();
-        scenarioInput.focus();
-      }
-    }
-
-    function populateDropdown() {
-      const currentScenarios = scenarios[selections.type] || [];
-      const searchTerm = scenarioInput.value.toLowerCase();
-
-      const filtered = currentScenarios.filter(s => {
-        const categoryMatch = selections.type === 'pre' ||
-                              selections.category === 'All' ||
-                              s.category === selections.category;
-        const searchMatch = s.dropdownText.toLowerCase().includes(searchTerm);
-        return categoryMatch && searchMatch;
-      });
-
-      filtered.sort((a, b) => a.dropdownText.localeCompare(b.dropdownText));
-
-      scenarioDropdown.innerHTML = '';
-
-      if (selections.type === 'post' && selections.category === 'All') {
-        const grouped = filtered.reduce((acc, s) => {
-          (acc[s.category] = acc[s.category] || []).push(s);
-          return acc;
-        }, {});
-        Object.keys(grouped).sort().forEach(cat => {
-          const optgroup = document.createElement('div');
-          optgroup.className = 'category-label';
-          optgroup.textContent = cat;
-          scenarioDropdown.appendChild(optgroup);
-          grouped[cat].forEach(addScenarioItem);
-        });
-      } else {
-        filtered.forEach(addScenarioItem);
-      }
-
-      scenarioDropdown.classList.toggle('show', filtered.length > 0);
-    }
-
-    function addScenarioItem(s) {
-      const item = document.createElement('div');
-      item.textContent = s.dropdownText;
-      item.dataset.id = s.id;
-      item.addEventListener('click', () => {
-        scenarioInput.value = s.dropdownText;
-        selections.scenarioId = s.id;
-        scenarioDropdown.classList.remove('show');
-        generateMessage();
-      });
-      scenarioDropdown.appendChild(item);
-    }
-
-    function generateMessage() {
-      if (!selections.type || !selections.scenarioId) {
-        messageOutput.value = '';
-        updateCharCounter();
-        return;
-      }
-
-      const selectedScenario = scenarios[selections.type].find(s => s.id === selections.scenarioId);
-      if (!selectedScenario) {
-        messageOutput.value = '';
-        updateCharCounter();
-        return;
-      }
-
-      // Base template depending on brand
-      let message = (selections.brand === 'BT')
-        ? selectedScenario.bt_template
-        : selectedScenario.ee_template;
-
-      if (selections.type === 'post') {
-        // For delay scenarios that use {date}
-        if (selectedScenario.delayDays > 0 && message.includes('{date}')) {
-          const startDate = delayStartDateInput.value;
-          const useWorking = (selectedScenario.isWorkingDays !== false);
-          const calcDate = calculateDate(selectedScenario.delayDays, startDate, useWorking);
-          message = message.replace(/{date}/g, formatDate(calcDate));
+            affectedTicketIdInput.value = ticketId;
+            affectedModal.classList.remove('opacity-0', 'pointer-events-none');
+            affectedModal.querySelector('.modal-content').classList.remove('scale-95');
         }
 
-        const hasGreeting = message.toLowerCase().startsWith('hi');
+        /**
+         * Hides the "I've been affected" modal
+         */
+        function hideModal() {
+            affectedForm.reset();
+            // Re-fill the read-only EIN field after reset
+            affectedEinInput.value = userEIN; 
+            
+            const errorMsg = document.getElementById('modal-error-msg');
+            errorMsg.textContent = '';
+            errorMsg.classList.add('hidden');
+            
+            affectedModal.classList.add('opacity-0', 'pointer-events-none');
+            affectedModal.querySelector('.modal-content').classList.add('scale-95');
+        }
 
-        if (selections.scenarioId === 'complaint_logged') {
-          // Special logic for complaint_logged
-          if (selections.contact === 'Yes') {
-            // Contact made: simple acknowledgement
-            message = (selections.brand === 'BT')
-              ? selectedScenario.bt_template
-              : selectedScenario.ee_template;
-          } else {
-            // No contact: fallback to nocontact + callback
-            if (selectedScenario.bt_template_nocontact && selectedScenario.ee_template_nocontact) {
-              message = (selections.brand === 'BT')
-                ? selectedScenario.bt_template_nocontact
-                : selectedScenario.ee_template_nocontact;
+        // --- NEW NAVIGATION FUNCTIONS ---
+
+        /**
+         * Shows the sidebar menu
+         */
+        function showSidebar() {
+            sidebar.classList.remove('-translate-x-full');
+            sidebarOverlay.classList.remove('opacity-0', 'pointer-events-none');
+            sidebarOverlay.classList.add('opacity-100', 'pointer-events-auto');
+        }
+
+        /**
+         * Hides the sidebar menu
+         */
+        function hideSidebar() {
+            sidebar.classList.add('-translate-x-full');
+            sidebarOverlay.classList.remove('opacity-100', 'pointer-events-auto');
+            sidebarOverlay.classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        /**
+         * Shows the correct page content based on the currentPage global variable
+         */
+        function renderPage() {
+            // Role-based page redirect
+            if (userRole === 'guide' && currentPage === 'submit') {
+                currentPage = 'known'; // Guides can't see submit page
+            }
+            
+            // Auto-fill submit form EIN if on that page
+            if (currentPage === 'submit') {
+                ticketEinInput.value = userEIN;
+            }
+
+            // Hide all pages
+            pageContents.forEach(page => {
+                page.classList.add('hidden');
+            });
+            // Show the current page
+            const activePage = document.getElementById(`page-${currentPage}`);
+            if (activePage) {
+                activePage.classList.remove('hidden');
+            }
+            // Update header title
+            headerTitle.textContent = pageTitles[currentPage] || 'Bug Board';
+
+            // Highlight active nav link
+            navLinks.forEach(link => {
+                if (link.dataset.page === currentPage) {
+                    link.classList.add('bg-slate-100', 'text-blue-600');
+                } else {
+                    link.classList.remove('bg-slate-100', 'text-blue-600');
+                }
+            });
+        }
+
+        /**
+         * Handles clicks on the nav links in the sidebar
+         */
+        function handleNavClick(e) {
+            const page = e.target.dataset.page;
+            if (page) {
+                currentPage = page;
+                renderPage();
+                hideSidebar();
+            }
+        }
+
+        // --- NEW: Role-Based & Login Functions ---
+
+        /**
+         * Hides/Shows UI elements based on user role
+         */
+        function renderUIForRole() {
+            if (!userRole) return; // Should not happen
+
+            if (userRole === 'guide') {
+                submitNavBtn.style.display = 'none'; // Hide "Submit Issue" link
+            } else if (userRole === 'tl') {
+                submitNavBtn.style.display = 'block'; // Ensure "Submit Issue" link is visible
+            }
+        }
+
+        /**
+         * Handles the login logic (Guide button or TL form)
+         */
+        function handleAppLogin(e) {
+            e.preventDefault();
+            const ein = einInput.value.trim();
+            const tlCode = tlCodeInput.value.trim();
+
+            if (!ein) {
+                loginErrorMsg.textContent = 'Please enter your EIN.';
+                loginErrorMsg.classList.remove('hidden');
+                return;
+            }
+
+            // This is where you would validate the TL code.
+            // For this demo, we'll accept any non-empty code as a "TL".
+            if (tlCode) {
+                userRole = 'tl';
             } else {
-              const unc = message.charAt(0).toLowerCase() + message.slice(1);
-              message = `Sorry I missed you today. ${unc}`;
+                userRole = 'guide';
             }
-          }
-        } else {
-          // Default logic for other post scenarios
-          if (selections.contact === 'No') {
-            if (selectedScenario.bt_template_nocontact && selectedScenario.ee_template_nocontact) {
-              message = (selections.brand === 'BT')
-                ? selectedScenario.bt_template_nocontact
-                : selectedScenario.ee_template_nocontact;
+            
+            userEIN = ein; // Save the EIN
+
+            // Save to localStorage
+            localStorage.setItem('userRole', userRole);
+            localStorage.setItem('userEIN', userEIN);
+            
+            // Set default page based on role
+            if (userRole === 'tl') {
+                currentPage = 'submit';
             } else {
-              const unc = message.charAt(0).toLowerCase() + message.slice(1);
-              message = `Sorry I couldn't reach you. ${unc}`;
+                currentPage = 'known';
             }
-          } else if (selections.contact === 'Yes' && !hasGreeting) {
-            const unc = message.charAt(0).toLowerCase() + message.slice(1);
-            message = `It was great to speak to you today. ${unc}`;
-          }
+
+            loginErrorMsg.classList.add('hidden');
+            loginModal.classList.add('hidden'); // Hide modal
+            appLoader.classList.remove('hidden'); // ADDED: Show loader
+            initializeAppLogic(); // Start the main app
         }
-      }
 
-      messageOutput.value = message;
-
-      // Show callback UI if scenario requires it
-      const needsCallback = !!(selectedScenario.requiresCallback);
-      callbackOptions.classList.toggle('hidden', !needsCallback);
-
-      // Show delay date UI only for delay category
-      delayOptions.classList.toggle('hidden',
-        !(selectedScenario && selectedScenario.category === 'Delays'));
-
-      updateCharCounter();
-    }
-
-    function clearScenarioSelection() {
-      scenarioInput.value = '';
-      selections.scenarioId = null;
-      messageOutput.value = '';
-      updateCharCounter();
-      delayOptions.classList.add('hidden');
-      callbackOptions.classList.add('hidden');
-    }
-
-    function resetApp() {
-      selections.type = null;
-      selections.brand = null;
-      selections.category = null;
-      selections.contact = null;
-      selections.scenarioId = null;
-
-      document.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
-
-      clearScenarioSelection();
-
-      const today = new Date().toISOString().split('T')[0];
-      delayStartDateInput.value = today;
-      callbackDateInput.value = today;
-      populateTimeSlots(today);
-
-      updateUI();
-    }
-
-    function updateCharCounter() {
-      const len = messageOutput.value.length;
-      charCounter.textContent = len > 0 ? `${len} characters (${Math.ceil(len / 160)} SMS)` : '';
-    }
-
-    function formatDate(date) {
-      const d = String(date.getDate()).padStart(2, '0');
-      const m = String(date.getMonth() + 1).padStart(2, '0');
-      return `${d}/${m}/${date.getFullYear()}`;
-    }
-
-    function calculateDate(daysToAdd, startDateString, useWorkingDays = true) {
-      let currentDate = startDateString
-        ? new Date(startDateString + 'T00:00:00')
-        : new Date();
-
-      if (useWorkingDays) {
-        let added = 0;
-        while (added < daysToAdd) {
-          currentDate.setDate(currentDate.getDate() + 1);
-          const dow = currentDate.getDay();
-          if (dow !== 0 && dow !== 6) {
-            added++;
-          }
+        /**
+         * Logs the user out by clearing their role and reloading
+         */
+        function handleLogout() {
+            // Clear both role and EIN
+            localStorage.removeItem('userRole');
+            localStorage.removeItem('userEIN');
+            location.reload();
         }
-      } else {
-        currentDate.setDate(currentDate.getDate() + daysToAdd);
-      }
-      return currentDate;
-    }
 
-    function populateTimeSlots(dateString) {
-      callbackTimeInput.innerHTML = '';
-      const d = new Date(dateString + 'T00:00:00');
-      const day = d.getDay();
-      const startHour = (day === 0 ? 9 : 8);
+        /**
+         * Checks if a user role is saved in localStorage.
+         * If not, shows the login modal. If so, starts the app.
+         */
+        function checkAppLogin() {
+            // Check for both role and EIN
+            const savedRole = localStorage.getItem('userRole');
+            const savedEIN = localStorage.getItem('userEIN');
+            
+            if (savedRole && savedEIN) {
+                // User is already "logged in", set globals and start the app
+                userRole = savedRole;
+                userEIN = savedEIN;
+                loginModal.classList.add('hidden');
 
-      for (let h = startHour; h < 20; h++) {
-        for (let m = 0; m < 60; m += 15) {
-          const hh = String(h).padStart(2, '0');
-          const mm = String(m).padStart(2, '0');
-          const opt = document.createElement('option');
-          opt.value = opt.textContent = `${hh}:${mm}`;
-          callbackTimeInput.appendChild(opt);
-        }
-      }
-    }
+                // Set default page based on role (for page load)
+                if (userRole === 'tl') {
+                    currentPage = 'submit';
+                } else {
+                    currentPage = 'known';
+                }
 
-    document.addEventListener('DOMContentLoaded', () => {
-      const today = new Date().toISOString().split('T')[0];
-      callbackDateInput.min = today;
-      callbackDateInput.value = today;
-      delayStartDateInput.value = today;
-      populateTimeSlots(today);
-      updateUI();
-    });
-
-    ['brand', 'type', 'category', 'contactStatus'].forEach(name => {
-      document.querySelectorAll(`input[name="${name}"]`).forEach(radio => {
-        radio.addEventListener('change', e => {
-          const key = name === 'contactStatus' ? 'contact' : name;
-          selections[key] = e.target.value;
-
-          if (key === 'brand' || key === 'contact') {
-            if (selections.scenarioId) {
-              generateMessage();
+                loginModal.classList.add('hidden');
+                appLoader.classList.remove('hidden'); // ADDED: Show loader
+                initializeAppLogic();
+            } else {
+                // No role/EIN saved, show the login modal
+                loginModal.classList.remove('hidden');
+                appLoader.classList.add('hidden'); // ADDED: Ensure loader is hidden
             }
-          } else {
-            clearScenarioSelection();
-          }
-
-          updateUI();
-        });
-      });
-    });
-
-    scenarioInput.addEventListener('input', populateDropdown);
-    scenarioInput.addEventListener('click', () => {
-      if (scenarioInput.value !== '') {
-        clearScenarioSelection();
-      }
-      populateDropdown();
-      scenarioInput.focus();
-    });
-
-    document.addEventListener('click', e => {
-      if (!appContainer.contains(e.target)) {
-        scenarioDropdown.classList.remove('show');
-      }
-    });
-
-    delayStartDateInput.addEventListener('change', generateMessage);
-    callbackDateInput.addEventListener('change', e => populateTimeSlots(e.target.value));
-    insertDateTimeButton.addEventListener('click', () => {
-      const date = callbackDateInput.value;
-      const time = callbackTimeInput.value;
-      if (date && time) {
-        const dObj = new Date(date + 'T00:00:00');
-        const fmt = dObj.toLocaleDateString('en-GB', {
-          weekday: 'long',
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        });
-        messageOutput.value += `${fmt} at ${time}`;
-        updateCharCounter();
-      }
-    });
-
-    copyButton.addEventListener('click', () => {
-      if (messageOutput.value) {
-        try {
-          messageOutput.select();
-          messageOutput.setSelectionRange(0, 99999);
-          if (document.execCommand('copy')) {
-            statusMessage.textContent = 'Message copied to clipboard!';
-          } else {
-            statusMessage.textContent = 'Failed to copy!';
-          }
-          window.getSelection().removeAllRanges();
-        } catch (err) {
-          statusMessage.textContent = 'Failed to copy!';
-        } finally {
-          setTimeout(() => { statusMessage.textContent = ''; }, 2000);
         }
-      }
-    });
+        
+        /**
+         * Contains the main app logic that runs *after* a role is set
+         */
+        async function initializeAppLogic() {
+            // 1. Set up UI based on role
+            renderUIForRole();
+            
+            // 2. Set user EIN in header
+            userEinDisplay.textContent = userEIN;
 
-    resetButton.addEventListener('click', resetApp);
-    messageOutput.addEventListener('input', updateCharCounter);
+            // 3. Initialize Firebase
+            // -----------------------------------------------------------------
+            // --- IMPORTANT: PASTE YOUR OWN FIREBASE CONFIG OBJECT HERE ---
+            // (You get this from your Firebase Project Settings)
+            // -----------------------------------------------------------------
+            // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+                let firebaseConfig = { // CHANGED to let
+                    apiKey: "YOUR_API_KEY",
+                    authDomain: "YOUR_AUTH_DOMAIN",
+                    projectId: "YOUR_PROJECT_ID",
+                    storageBucket: "YOUR_STORAGE_BUCKET",
+                    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+                    appId: "YOUR_APP_ID",
+                    measurementId: "YOUR_MEASUREMENT_ID"
+                };
+            // -----------------------------------------------------------------
+            // FALLBACK Config (if the one above is not filled)
+            if (firebaseConfig.apiKey === "YOUR_API_KEY") {
+                console.warn("Using placeholder Firebase config. Please update `firebaseConfig` in the script.");
+                 const placeholderConfig = {
+                    apiKey: "AIzaSyBeci550NSuYHxGNctUPCEozou92w8n0Rw",
+                    authDomain: "my-bug-board.firebaseapp.com",
+                    projectId: "my-bug-board",
+                    storageBucket: "my-bug-board.appspot.com",
+                    messagingSenderId: "276540108265",
+                    appId: "1:276540108265:web:7f32c71f66e34f4d582f78",
+                    measurementId: "G-Y6BL20YLJW"
+                };
+                firebaseConfig = placeholderConfig; // CHANGED to direct assignment
+            }
+            // -----------------------------------------------------------------
 
-  </script>
+
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+            setLogLevel('debug');
+
+            // 4. Sign in the user (Firebase auth)
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    userId = user.uid; // This is the ANONYMOUS id, not the EIN
+                    
+                    ticketsCollectionRef = collection(db, ticketsCollectionPath);
+                    onSnapshot(query(ticketsCollectionRef), renderApp);
+
+                    // Seed permanent issues on load
+                    await seedPermanentIssues();
+
+                    // 5. Attach all event handlers
+                    newTicketForm.addEventListener('submit', handleNewTicketSubmit);
+                    
+                    // Listen for clicks on the parent lists
+                    newTicketsList.addEventListener('click', handleListClicks);
+                    // UPDATED: Listen on the two new lists
+                    persistentIssuesList.addEventListener('click', handleListClicks);
+                    newIssuesList.addEventListener('click', handleListClicks);
+                    completedTicketsList.addEventListener('click', handleListClicks); 
+
+                    // Modal listeners
+                    modalCancelBtn.addEventListener('click', hideModal);
+                    affectedForm.addEventListener('submit', handleAffectedSubmit);
+
+                    // New Nav Listeners
+                    hamburgerBtn.addEventListener('click', showSidebar);
+                    sidebarOverlay.addEventListener('click', hideSidebar);
+                    navLinks.forEach(link => {
+                        link.addEventListener('click', handleNavClick);
+                    });
+                    logoutBtn.addEventListener('click', handleLogout); // Attach sidebar logout listener
+                    headerLogoutBtn.addEventListener('click', handleLogout); // Attach header logout listener
+
+                    // 6. Initial Page Render
+                    renderPage();
+
+                    // ADDED: Hide loader AFTER first render
+                    appLoader.classList.add('hidden');
+
+                } else {
+                    // No user, sign in
+                    try {
+                        // For the GitHub version, we ONLY use anonymous sign-in
+                        await signInAnonymously(auth);
+                    } catch (error) {
+                        console.error("Authentication failed: ", error);
+                        // ADDED: Handle auth failure
+                        appLoader.classList.add('hidden');
+                        // Show login modal again with an error
+                        loginModal.classList.remove('hidden');
+                        loginErrorMsg.textContent = "Could not connect to service. Please try again.";
+                        loginErrorMsg.classList.remove('hidden');
+                        // Clear local data so they have to "log in" again
+                        localStorage.removeItem('userRole');
+                        localStorage.removeItem('userEIN');
+                    }
+                }
+            });
+        }
+
+        // --- END NEW Role-Based Functions ---
+
+        // --- NEW: Permanent Issue Seeding ---
+
+        /**
+         * Checks for and creates the 5 permanent issues if they don't exist.
+         */
+        async function seedPermanentIssues() {
+            const permanentIssueTitles = [
+                'CCE Issues',
+                'VPN Issues',
+                'Consumer Issues',
+                'OneView Issues',
+                'Advisor Hub Issues'
+            ];
+
+            try {
+                // Check if any permanent issues exist at all
+                const q = query(ticketsCollectionRef, where("isPermanent", "==", true));
+                const querySnapshot = await getDocs(q);
+                
+                const existingTitles = new Set(querySnapshot.docs.map(doc => doc.data().title));
+                const missingTitles = permanentIssueTitles.filter(title => !existingTitles.has(title));
+
+                if (missingTitles.length > 0) {
+                    console.log(`Seeding ${missingTitles.length} missing permanent issues...`);
+                    // Use a loop to add each missing doc
+                    for (const title of missingTitles) {
+                        await addDoc(ticketsCollectionRef, {
+                            title: title,
+                            description: "This is an ongoing, persistent operational issue.",
+                            status: 'KNOWN',
+                            isPermanent: true, // Special flag
+                            createdAt: serverTimestamp(),
+                            acknowledgedAt: serverTimestamp(),
+                            affectedUsers: [] 
+                        });
+                    }
+                } else {
+                    console.log('All permanent issues already exist.');
+                }
+            } catch (error) {
+                console.error("Error seeding permanent issues: ", error);
+            }
+        }
+
+        /**
+         * Renders a single ticket card into its parent list.
+         * @param {HTMLElement} listElement - The list element to append to.
+         * @param {object} ticket - The ticket data object.
+         */
+        function renderTicketCard(listElement, ticket) {
+             const affectedUsers = ticket.affectedUsers || [];
+            const numAffected = affectedUsers.length;
+
+            // Check if *this user's* EIN is in the list
+            const userIsAffected = affectedUsers.some(user => user.ein === userEIN);
+
+            // Conditionally hide "Complete" button for permanent issues
+            const completeButtonHtml = ticket.isPermanent
+                ? '' // Don't render the button if the issue is permanent
+                : `<button data-id="${ticket.id}" class="complete-btn w-full text-sm font-medium py-1 px-3 rounded-lg transition bg-blue-500 text-white hover:bg-blue-600 mt-2">
+                        Mark as Complete (Admin)
+                    </button>`;
+
+            const el = document.createElement('div');
+            el.className = 'p-4 border border-slate-200 rounded-lg shadow-sm';
+            el.innerHTML = `
+                <h3 class="font-semibold text-lg">${ticket.title}</h3>
+                <p class="text-sm text-slate-600 mb-3">${ticket.description}</p>
+                <div class="flex justify-between text-sm mb-3">
+                    <span class="font-medium text-slate-700">Affected: <strong class="text-red-600">${numAffected}</strong></span>
+                    <span class="text-slate-500">Open for ${formatTimeAgo(ticket.acknowledgedAt || ticket.createdAt)}</span>
+                </div>
+                <button data-id="${ticket.id}" class="affected-btn w-full text-sm font-medium py-1 px-3 rounded-lg transition ${userIsAffected ? 'bg-slate-300 text-slate-600 cursor-not-allowed' : 'bg-yellow-500 text-white hover:bg-yellow-600'}" ${userIsAffected ? 'disabled' : ''}>
+                    ${userIsAffected ? 'You reported this' : "I've been affected by this"}
+                </button>
+                ${completeButtonHtml}
+            `;
+            listElement.appendChild(el);
+        }
+
+        /**
+         * The main render function. Processes the snapshot data and updates the UI.
+         */
+        function renderApp(querySnapshot) {
+            if (!querySnapshot) return; // Don't run if data isn't loaded
+            
+            globalSnapshot = querySnapshot; // Store for metric recalculation
+
+            // Clear lists
+            newTicketsList.innerHTML = '';
+            // UPDATED: Clear the two new lists
+            persistentIssuesList.innerHTML = '';
+            newIssuesList.innerHTML = '';
+            completedTicketsList.innerHTML = '';
+
+            // Metric counters
+            let totalAffectedCount = 0;
+            let uniqueAffectedEINs = new Set(); // For unique guide counting
+            
+            // Arrays for sorting
+            let pendingTickets = [];
+            // UPDATED: Use two arrays for known tickets
+            let persistentTickets = [];
+            let newAndImportantTickets = [];
+            let completedTicketsArray = []; 
+            let allKnownTickets = []; // For metrics
+
+            if (querySnapshot.empty) {
+                // Handled below by checking array lengths
+            }
+
+            querySnapshot.forEach(doc => {
+                const ticket = doc.data();
+                const ticketId = doc.id;
+                
+                if (ticket.status === 'PENDING') {
+                    pendingTickets.push({ id: ticketId, ...ticket });
+                } 
+                else if (ticket.status === 'KNOWN') {
+                    const ticketWithId = { id: ticketId, ...ticket };
+                    // UPDATED: Sort into persistent or new
+                    if (ticket.isPermanent) {
+                        persistentTickets.push(ticketWithId);
+                    } else {
+                        newAndImportantTickets.push(ticketWithId);
+                    }
+                    allKnownTickets.push(ticketWithId); // Add to metrics list
+                }
+                else if (ticket.status === 'COMPLETE') {
+                    completedTicketsArray.push({ id: ticketId, ...ticket }); 
+                }
+            });
+
+            // --- RENDER PENDING (NEW) TICKETS ---
+            if (pendingTickets.length > 0) {
+                // Sort pending tickets by newest first
+                pendingTickets.sort((a, b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0));
+
+                pendingTickets.forEach(ticket => {
+                    const el = document.createElement('div');
+                    el.className = 'p-4 border border-slate-200 rounded-lg shadow-sm';
+                    el.innerHTML = `
+                        <h3 class="font-semibold text-lg">${ticket.title}</h3>
+                        <p class="text-sm text-slate-600 mb-2">${ticket.description}</p>
+                        <p class="text-xs text-slate-400 mb-1">Submitted by EIN: ${ticket.ein} (Code: ${ticket.uniqueCode})</p>
+                        <p class="text-xs text-slate-400 mb-3">Submitted ${formatTimeAgo(ticket.createdAt)}</p>
+                        <button data-id="${ticket.id}" class="approve-btn w-full bg-green-500 text-white text-sm font-medium py-1 px-3 rounded-lg hover:bg-green-600 transition">
+                            Approve (Move to Known)
+                        </button>
+                    `;
+                    newTicketsList.appendChild(el);
+                });
+            } else {
+                newTicketsList.innerHTML = '<p class="text-slate-400">No pending issues...</p>';
+            }
+
+            // --- RENDER KNOWN TICKETS (SORTED) ---
+            
+            // Sort by most affected users first
+            persistentTickets.sort((a, b) => (b.affectedUsers?.length || 0) - (a.affectedUsers?.length || 0));
+            newAndImportantTickets.sort((a, b) => (b.affectedUsers?.length || 0) - (a.affectedUsers?.length || 0));
+
+            // Render Persistent Issues
+            if (persistentTickets.length > 0) {
+                persistentTickets.forEach(ticket => {
+                    renderTicketCard(persistentIssuesList, ticket);
+                });
+            } else {
+                persistentIssuesList.innerHTML = '<p class="text-slate-400">No persistent issues...</p>';
+            }
+
+            // Render New & Important Issues
+            if (newAndImportantTickets.length > 0) {
+                newAndImportantTickets.forEach(ticket => {
+                    renderTicketCard(newIssuesList, ticket);
+                });
+            } else {
+                newIssuesList.innerHTML = '<p class="text-slate-400">No new known issues...</p>';
+            }
+
+            // --- RENDER COMPLETED TICKETS ---
+            if (completedTicketsArray.length > 0) {
+                 // Sort completed tickets by most recent first
+                completedTicketsArray.sort((a, b) => (b.completedAt?.toDate() || 0) - (a.completedAt?.toDate() || 0)); 
+                
+                completedTicketsArray.forEach(ticket => { 
+                    const el = document.createElement('div');
+                    el.className = 'p-4 border border-slate-200 rounded-lg shadow-sm bg-slate-50';
+                    el.innerHTML = `
+                        <h3 class="font-semibold text-lg text-slate-500 line-through">${ticket.title}</h3>
+                        <p class="text-sm text-slate-500 mb-2">${ticket.description}</p>
+                        <p class="text-xs text-slate-400">Completed ${formatTimeAgo(ticket.completedAt)}</p>
+                    `;
+                    completedTicketsList.appendChild(el);
+                });
+            } else {
+                completedTicketsList.innerHTML = '<p class="text-slate-400">No completed issues...</p>';
+            }
+
+            // --- UPDATE METRICS ---
+            // Calculate metrics from ALL known tickets
+            allKnownTickets.forEach(ticket => {
+                const affectedUsers = ticket.affectedUsers || [];
+                totalAffectedCount += affectedUsers.length;
+                affectedUsers.forEach(user => {
+                    if (user.ein) { 
+                        uniqueAffectedEINs.add(user.ein);
+                    }
+                });
+            });
+            
+            metricTotalAffected.textContent = totalAffectedCount;
+            metricUniqueAffected.textContent = uniqueAffectedEINs.size; // Set unique count
+            
+            // --- Update Top 5 List ---
+            top5List.innerHTML = ''; // Clear old list
+            // Sort all known tickets for Top 5
+            allKnownTickets.sort((a, b) => (b.affectedUsers?.length || 0) - (a.affectedUsers?.length || 0));
+            const top5Issues = allKnownTickets.slice(0, 5);
+            
+            if (top5Issues.length > 0) {
+                top5Issues.forEach((ticket, index) => {
+                    const numAffected = ticket.affectedUsers?.length || 0;
+                    const el = document.createElement('div');
+                    el.className = 'flex justify-between items-center p-3 bg-slate-50 rounded-lg';
+                    el.innerHTML = `
+                        <div>
+                            <span class="font-bold text-slate-800">${index + 1}.</span>
+                            <span class="font-medium ml-2">${ticket.title}</span>
+                        </div>
+                        <span class="font-bold text-red-600 text-lg">${numAffected}</span>
+                    `;
+                    top5List.appendChild(el);
+                });
+            } else {
+                top5List.innerHTML = '<p class="text-slate-400">No known issues to display...</p>';
+            }
+
+            // --- Update Pie Chart ---
+            
+            // 1. Destroy old chart if it exists
+            if (metricsChart) {
+                metricsChart.destroy();
+            }
+
+            // 2. Prepare data (Top 5 + "Other")
+            const chartLabels = [];
+            const chartData = [];
+            let otherCount = 0;
+
+            allKnownTickets.forEach((ticket, index) => {
+                const count = ticket.affectedUsers?.length || 0;
+                if (index < 5) {
+                    chartLabels.push(ticket.title);
+                    chartData.push(count);
+                } else {
+                    otherCount += count;
+                }
+            });
+
+            if (otherCount > 0) {
+                chartLabels.push('Other');
+                chartData.push(otherCount);
+            }
+            
+            // 3. Create new chart
+            if (chartData.length > 0) {
+                const ctx = chartCanvas.getContext('2d');
+                metricsChart = new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: chartLabels,
+                        datasets: [{
+                            label: '# of Votes',
+                            data: chartData,
+                            backgroundColor: [
+                                'rgba(239, 68, 68, 0.7)',  // red-500
+                                'rgba(249, 115, 22, 0.7)', // orange-500
+                                'rgba(234, 179, 8, 0.7)',  // yellow-500
+                                'rgba(34, 197, 94, 0.7)', // green-500
+                                'rgba(59, 130, 246, 0.7)', // blue-500
+                                'rgba(107, 114, 128, 0.7)' // gray-500
+                            ],
+                            borderColor: [
+                                'rgba(239, 68, 68, 1)',
+                                'rgba(249, 115, 22, 1)',
+                                'rgba(234, 179, 8, 1)',
+                                'rgba(34, 197, 94, 1)',
+                                'rgba(59, 130, 246, 1)',
+                                'rgba(107, 114, 128, 1)'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    // Show percentage on tooltip
+                                    label: function(context) {
+                                        let label = context.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        const value = context.parsed;
+                                        if(totalAffectedCount === 0) return label + "0 votes (0.0%)"; // Avoid divide by zero
+                                        
+                                        const percentage = ((value / totalAffectedCount) * 100).toFixed(1) + '%';
+                                        label += `${value} votes (${percentage})`;
+                                        return label;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // --- EVENT HANDLERS ---
+
+        /**
+         * Handle New Ticket Submission
+         */
+        async function handleNewTicketSubmit(e) {
+            e.preventDefault();
+            const title = document.getElementById('ticket-title').value;
+            const description = document.getElementById('ticket-desc').value;
+            const ein = ticketEinInput.value; // Get auto-filled EIN
+            const uniqueCode = document.getElementById('ticket-code').value;
+
+            if (!title || !description || !userId || !ein || !uniqueCode) return;
+
+            try {
+                await addDoc(ticketsCollectionRef, {
+                    title: title,
+                    description: description,
+                    ein: ein, // Save the submitter's EIN
+                    uniqueCode: uniqueCode,
+                    status: 'PENDING', // Initial status
+                    createdAt: serverTimestamp(),
+                    submitterId: userId, // Firebase auth ID
+                    affectedUsers: [] 
+                });
+                newTicketForm.reset();
+                // Re-fill EIN after reset
+                ticketEinInput.value = userEIN; 
+                
+                // Switch to pending page after submission
+                currentPage = 'pending';
+                renderPage();
+            } catch (error) {
+                console.error("Error adding document: ", error);
+            }
+        }
+
+        /**
+         * Handle Clicks on the lists (for Acknowledge and Affected buttons)
+         */
+        function handleListClicks(e) {
+            // Acknowledge Button Click
+            if (e.target.classList.contains('approve-btn')) {
+                const ticketId = e.target.dataset.id;
+                const ticketRef = doc(db, ticketsCollectionPath, ticketId);
+                updateDoc(ticketRef, {
+                    status: 'KNOWN',
+                    acknowledgedAt: serverTimestamp()
+                }).catch(error => console.error("Error updating ticket: ", error));
+            }
+
+            // "I've been affected" Button Click
+            if (e.target.classList.contains('affected-btn')) {
+                const ticketId = e.target.dataset.id;
+                showModal(ticketId);
+            }
+
+            // "Complete" Button Click
+            if (e.target.classList.contains('complete-btn')) {
+                const ticketId = e.target.dataset.id;
+                const ticketRef = doc(db, ticketsCollectionPath, ticketId);
+                
+                updateDoc(ticketRef, {
+                    status: 'COMPLETE',
+                    completedAt: serverTimestamp()
+                }).catch(error => console.error("Error completing ticket: ", error));
+            }
+        }
+
+        /**
+         * Handle "Affected" Modal Form Submission
+         */
+        async function handleAffectedSubmit(e) {
+            e.preventDefault();
+            const ticketId = affectedTicketIdInput.value;
+            const ein = affectedEinInput.value; // Get auto-filled EIN
+            const comments = affectedCommentsInput.value;
+            const errorMsg = document.getElementById('modal-error-msg');
+
+            if (!ticketId || !ein || !userId) return;
+
+            errorMsg.textContent = '';
+            errorMsg.classList.add('hidden');
+            
+            const newAffectedEntry = {
+                userId: userId, // Firebase auth ID
+                ein: ein,       // User's EIN
+                comments: comments,
+                timestamp: new Date() // Use client-side date
+            };
+
+            try {
+                const ticketRef = doc(db, ticketsCollectionPath, ticketId);
+                const ticketDoc = await getDoc(ticketRef);
+
+                if (ticketDoc.exists()) {
+                    const ticket = ticketDoc.data();
+                    const affectedUsers = ticket.affectedUsers || [];
+
+                    // Check if EIN is already in the list
+                    const isAlreadyAffected = affectedUsers.some(user => user.ein === ein);
+
+                    if (isAlreadyAffected) {
+                        errorMsg.textContent = 'This EIN has already been registered for this issue.';
+                        errorMsg.classList.remove('hidden');
+                    } else {
+                        affectedUsers.push(newAffectedEntry);
+                        await updateDoc(ticketRef, {
+                            affectedUsers: affectedUsers
+                        });
+                        hideModal();
+                    }
+                }
+            } catch (error) {
+                console.error("Error reporting affected issue: ", error);
+                errorMsg.textContent = 'An error occurred. Please try again.';
+                errorMsg.classList.remove('hidden');
+            }
+        }
+
+        // --- INITIALIZATION ---
+        async function main() {
+            // 1. Attach login modal listeners
+            loginForm.addEventListener('submit', handleAppLogin);
+
+            // 2. Check for a saved role, which will either show the modal
+            //    or call initializeAppLogic() to start the app.
+            checkAppLogin();
+        }
+
+        main(); // Run the app
+    </script>
 </body>
 </html>
