@@ -261,6 +261,29 @@
         </div>
     </div>
     
+    <!-- NEW: "Complete Issue" Modal -->
+    <div id="complete-modal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 opacity-0 pointer-events-none">
+        <div class="modal-content bg-white w-full max-w-md p-6 rounded-lg shadow-xl transform scale-95">
+            <h3 class="text-xl font-semibold mb-4">Complete Issue</h3>
+            <form id="complete-form">
+                <input type="hidden" id="complete-ticket-id">
+                <div id="complete-modal-error-msg" class="text-red-600 text-sm mb-3 hidden"></div>
+                <div class="mb-4">
+                    <label for="complete-description" class="block text-sm font-medium text-slate-700 mb-1">Resolution Details</label>
+                    <textarea id="complete-description" rows="3" placeholder="Describe the fix or resolution..." class="w-full p-2 border border-slate-300 rounded-lg shadow-sm" required></textarea>
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button type="button" id="complete-modal-cancel-btn" class="bg-slate-200 text-slate-800 font-semibold py-2 px-4 rounded-lg hover:bg-slate-300 transition">
+                        Cancel
+                    </button>
+                    <button type="submit" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition">
+                        Mark as Complete
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
     <!-- NEW: Role Login Modal (Re-designed) -->
     <div id="login-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-100">
         <div class="bg-white w-full max-w-sm p-8 rounded-lg shadow-xl">
@@ -357,6 +380,14 @@
         const affectedEinInput = document.getElementById('affected-ein'); // Modal EIN input
         const affectedCommentsInput = document.getElementById('affected-comments');
 
+        // NEW Complete Modal DOM Elements
+        const completeModal = document.getElementById('complete-modal');
+        const completeForm = document.getElementById('complete-form');
+        const completeTicketIdInput = document.getElementById('complete-ticket-id');
+        const completeDescriptionInput = document.getElementById('complete-description');
+        const completeModalCancelBtn = document.getElementById('complete-modal-cancel-btn');
+        const completeModalErrorMsg = document.getElementById('complete-modal-error-msg');
+
         // New Nav DOM Elements
         const sidebar = document.getElementById('sidebar');
         const sidebarOverlay = document.getElementById('sidebar-overlay');
@@ -436,6 +467,28 @@
             
             affectedModal.classList.add('opacity-0', 'pointer-events-none');
             affectedModal.querySelector('.modal-content').classList.add('scale-95');
+        }
+
+        /**
+         * Shows the "Complete Issue" modal
+         */
+        function showCompleteModal(ticketId) {
+            completeModalErrorMsg.textContent = '';
+            completeModalErrorMsg.classList.add('hidden');
+            completeTicketIdInput.value = ticketId;
+            completeModal.classList.remove('opacity-0', 'pointer-events-none');
+            completeModal.querySelector('.modal-content').classList.remove('scale-95');
+        }
+
+        /**
+         * Hides the "Complete Issue" modal
+         */
+        function hideCompleteModal() {
+            completeForm.reset();
+            completeModalErrorMsg.textContent = '';
+            completeModalErrorMsg.classList.add('hidden');
+            completeModal.classList.add('opacity-0', 'pointer-events-none');
+            completeModal.querySelector('.modal-content').classList.add('scale-95');
         }
 
         // --- NEW NAVIGATION FUNCTIONS ---
@@ -677,6 +730,10 @@
                     modalCancelBtn.addEventListener('click', hideModal);
                     affectedForm.addEventListener('submit', handleAffectedSubmit);
 
+                    // NEW Complete Modal listeners
+                    completeModalCancelBtn.addEventListener('click', hideCompleteModal);
+                    completeForm.addEventListener('submit', handleCompleteSubmit);
+
                     // New Nav Listeners
                     hamburgerBtn.addEventListener('click', showSidebar);
                     sidebarOverlay.addEventListener('click', hideSidebar);
@@ -901,12 +958,18 @@
                 completedTicketsArray.sort((a, b) => (b.completedAt?.toDate() || 0) - (a.completedAt?.toDate() || 0)); 
                 
                 completedTicketsArray.forEach(ticket => { 
+                    // ADDED: Check for fix description and create HTML
+                    const fixDescHtml = ticket.fixDescription
+                        ? `<p class="text-sm text-slate-600 mt-2 p-2 bg-green-50 rounded-lg"><strong>Resolution:</strong> ${ticket.fixDescription}</p>`
+                        : '';
+
                     const el = document.createElement('div');
                     el.className = 'p-4 border border-slate-200 rounded-lg shadow-sm bg-slate-50';
                     el.innerHTML = `
                         <h3 class="font-semibold text-lg text-slate-500 line-through">${ticket.title}</h3>
                         <p class="text-sm text-slate-500 mb-2">${ticket.description}</p>
                         <p class="text-xs text-slate-400">Completed ${formatTimeAgo(ticket.completedAt)}</p>
+                        ${fixDescHtml} <!-- ADDED -->
                     `;
                     completedTicketsList.appendChild(el);
                 });
@@ -1098,12 +1161,8 @@
             // "Complete" Button Click
             if (e.target.classList.contains('complete-btn')) {
                 const ticketId = e.target.dataset.id;
-                const ticketRef = doc(db, ticketsCollectionPath, ticketId);
-                
-                updateDoc(ticketRef, {
-                    status: 'COMPLETE',
-                    completedAt: serverTimestamp()
-                }).catch(error => console.error("Error completing ticket: ", error));
+                // CHANGED: Show modal instead of directly updating
+                showCompleteModal(ticketId);
             }
         }
 
@@ -1155,6 +1214,40 @@
                 console.error("Error reporting affected issue: ", error);
                 errorMsg.textContent = 'An error occurred. Please try again.';
                 errorMsg.classList.remove('hidden');
+            }
+        }
+
+        /**
+         * Handle "Complete" Modal Form Submission
+         */
+        async function handleCompleteSubmit(e) {
+            e.preventDefault();
+            const ticketId = completeTicketIdInput.value;
+            const fixDescription = completeDescriptionInput.value.trim();
+
+            if (!ticketId) return;
+            
+            if (!fixDescription) {
+                completeModalErrorMsg.textContent = 'Please provide resolution details.';
+                completeModalErrorMsg.classList.remove('hidden');
+                return;
+            }
+            
+            completeModalErrorMsg.textContent = '';
+            completeModalErrorMsg.classList.add('hidden');
+
+            try {
+                const ticketRef = doc(db, ticketsCollectionPath, ticketId);
+                await updateDoc(ticketRef, {
+                    status: 'COMPLETE',
+                    completedAt: serverTimestamp(),
+                    fixDescription: fixDescription // ADDED
+                });
+                hideCompleteModal();
+            } catch (error) {
+                console.error("Error completing ticket: ", error);
+                completeModalErrorMsg.textContent = 'An error occurred. Please try again.';
+                completeModalErrorMsg.classList.remove('hidden');
             }
         }
 
