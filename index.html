@@ -760,15 +760,10 @@
         }
         
         /**
-         * Contains the main app logic that runs *after* a role is set
+         * NEW: Initializes the Firebase app, db, and auth objects.
+         * This must be called before any other Firebase operations.
          */
-        async function initializeAppLogic() {
-            // 1. Set up UI based on role
-            renderUIForRole();
-            
-            // 2. Set user EIN in header
-            userEinDisplay.textContent = userEIN;
-
+        function initializeFirebase() {
             // 3. Initialize Firebase
             // -----------------------------------------------------------------
             // --- IMPORTANT: PASTE YOUR OWN FIREBASE CONFIG OBJECT HERE ---
@@ -806,6 +801,18 @@
             db = getFirestore(app);
             auth = getAuth(app);
             setLogLevel('debug');
+        }
+
+        /**
+         * Contains the main app logic that runs *after* a role is set
+         * MOVED Firebase init to initializeFirebase()
+         */
+        async function initializeAppLogic() {
+            // 1. Set up UI based on role
+            renderUIForRole();
+            
+            // 2. Set user EIN in header
+            userEinDisplay.textContent = userEIN;
 
             // 4. Sign in the user (Firebase auth)
             onAuthStateChanged(auth, async (user) => {
@@ -1516,10 +1523,13 @@
 
         // --- INITIALIZATION ---
         async function main() {
-            // 1. Attach login modal listeners
+            // 1. NEW: Initialize Firebase FIRST
+            initializeFirebase();
+
+            // 2. Attach login modal listeners
             loginForm.addEventListener('submit', handleAppLogin);
 
-            // 2. Check for a saved role, which will either show the modal
+            // 3. Check for a saved role, which will either show the modal
             //    or call initializeAppLogic() to start the app.
             checkAppLogin();
         }
