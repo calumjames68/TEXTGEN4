@@ -107,10 +107,11 @@
                         <!-- MODIFIED: Color -->
                         <h1 id="header-title" class="text-2xl font-bold text-primary ml-4">Submit New Issue</h1>
                     </div>
-                    <!-- Right: User EIN & Logout -->
+                    <!-- Right: User Name & Logout -->
                     <div class="flex items-center space-x-4">
                         <div class="text-sm">
-                            User EIN: <strong id="user-ein-display" class="text-slate-900">Loading...</strong>
+                            <!-- MODIFIED: "EIN" to "Name" -->
+                            User Name: <strong id="user-name-display" class="text-slate-900">Loading...</strong>
                         </div>
                         <!-- Logout Button -->
                         <!-- MODIFIED: Color -->
@@ -140,10 +141,10 @@
                                 <!-- MODIFIED: Color -->
                                 <textarea id="ticket-desc" rows="4" placeholder="Describe the issue in detail..." class="w-full p-2 border border-slate-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary" required></textarea>
                             </div>
-                            <!-- MODIFIED: EIN field will be auto-filled -->
+                            <!-- MODIFIED: Name field will be auto-filled -->
                             <div class="mb-4">
-                                <label for="ticket-ein" class="block text-sm font-medium text-slate-700 mb-1">Your EIN</label>
-                                <input type="text" id="ticket-ein" class="w-full p-2 border border-slate-300 rounded-lg shadow-sm bg-slate-100" readonly required>
+                                <label for="ticket-name" class="block text-sm font-medium text-slate-700 mb-1">Your Name</label>
+                                <input type="text" id="ticket-name" class="w-full p-2 border border-slate-300 rounded-lg shadow-sm bg-slate-100" readonly required>
                             </div>
                             <div class="mb-4">
                                 <label for="ticket-code" class="block text-sm font-medium text-slate-700 mb-1">Unique Code</label>
@@ -235,7 +236,8 @@
                             <!-- Metric Display 2 -->
                             <!-- MODIFIED: Color -->
                             <div class="p-4 bg-primary/10 rounded-lg">
-                                <div class="text-sm text-primary/90">Unique Affected Guides</div>
+                                <!-- MODIFIED: "Guides" to "Users" -->
+                                <div class="text-sm text-primary/90">Unique Affected Users</div>
                                 <div id="metric-unique-affected" class="text-3xl font-bold text-primary">0</div>
                             </div>
                         </div>
@@ -273,10 +275,10 @@
                 <input type="hidden" id="affected-ticket-id">
                 <!-- New Error Message Div -->
                 <div id="modal-error-msg" class="text-red-600 text-sm mb-3 hidden"></div>
-                <!-- MODIFIED: EIN field will be auto-filled -->
+                <!-- MODIFIED: Name field will be auto-filled -->
                 <div class="mb-4">
-                    <label for="affected-ein" class="block text-sm font-medium text-slate-700 mb-1">Your EIN</label>
-                    <input type="text" id="affected-ein" class="w-full p-2 border border-slate-300 rounded-lg shadow-sm bg-slate-100" readonly required>
+                    <label for="affected-name" class="block text-sm font-medium text-slate-700 mb-1">Your Name</label>
+                    <input type="text" id="affected-name" class="w-full p-2 border border-slate-300 rounded-lg shadow-sm bg-slate-100" readonly required>
                 </div>
                 <div class="mb-4">
                     <label for="affected-comments" class="block text-sm font-medium text-slate-700 mb-1">Comments (Optional)</label>
@@ -328,9 +330,10 @@
             
             <form id="login-form" class="space-y-4">
                 <div>
-                    <label for="ein-input" class="block text-sm font-medium text-slate-700 mb-2">Your EIN</label>
+                    <!-- MODIFIED: "EIN" to "Name" -->
+                    <label for="name-input" class="block text-sm font-medium text-slate-700 mb-2">Your Name</label>
                     <!-- MODIFIED: Color -->
-                    <input type="text" id="ein-input" placeholder="e.g., 12345" class="w-full p-3 border border-slate-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary" required>
+                    <input type="text" id="name-input" placeholder="e.g., Jane Doe" class="w-full p-3 border border-slate-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary" required>
                 </div>
                 <div>
                     <label for="tl-code-input" class="block text-sm font-medium text-slate-700 mb-2">Unique Code (if you are a TL)</label>
@@ -377,7 +380,7 @@
         // --- GLOBAL VARIABLES ---
         let db, auth;
         let userId = null; // Firebase anonymous auth ID
-        let userEIN = null;  // User's saved EIN
+        let userName = null;  // MODIFIED: User's saved Name
         let userRole = null; // User's role ('guide' or 'tl')
         let ticketsCollectionRef;
         // const appId = typeof __app_id !== 'undefined' ? __app_id : 'bug-board-default'; // Removed for GitHub version
@@ -386,6 +389,8 @@
         const ticketsCollectionPath = `tickets`;
         // ADDED: New collection path for TL codes
         const tlCodesCollectionPath = `tl_codes`;
+        // ADDED: New collection path for the activity log
+        const activityLogCollectionPath = `activity_log`;
         
         let globalSnapshot = null; // To store the latest data for metric re-calculation
         let currentPage = null; // To track the visible page. Will be set by login logic.
@@ -423,7 +428,7 @@
         const modalCancelBtn = document.getElementById('modal-cancel-btn');
         const affectedForm = document.getElementById('affected-form');
         const affectedTicketIdInput = document.getElementById('affected-ticket-id');
-        const affectedEinInput = document.getElementById('affected-ein'); // Modal EIN input
+        const affectedNameInput = document.getElementById('affected-name'); // MODIFIED: Modal Name input
         const affectedCommentsInput = document.getElementById('affected-comments');
 
         // NEW Complete Modal DOM Elements
@@ -448,17 +453,17 @@
         // NEW Login Modal DOM Elements
         const loginModal = document.getElementById('login-modal');
         const loginForm = document.getElementById('login-form');
-        const einInput = document.getElementById('ein-input');
+        const nameInput = document.getElementById('name-input'); // MODIFIED: nameInput
         const tlCodeInput = document.getElementById('tl-code-input');
         const loginErrorMsg = document.getElementById('login-error-msg');
         const appLoader = document.getElementById('app-loader'); // ADDED
         const loginButton = document.getElementById('login-btn'); // ADDED
         
         // Header Display
-        const userEinDisplay = document.getElementById('user-ein-display');
+        const userNameDisplay = document.getElementById('user-name-display'); // MODIFIED: userNameDisplay
         
         // Form inputs to auto-fill
-        const ticketEinInput = document.getElementById('ticket-ein'); // Submit form EIN input
+        const ticketNameInput = document.getElementById('ticket-name'); // MODIFIED: Submit form Name input
 
         // --- HELPER FUNCTIONS ---
 
@@ -492,8 +497,8 @@
             errorMsg.textContent = '';
             errorMsg.classList.add('hidden');
 
-            // Auto-fill EIN
-            affectedEinInput.value = userEIN;
+            // Auto-fill Name
+            affectedNameInput.value = userName; // MODIFIED
 
             affectedTicketIdInput.value = ticketId;
             affectedModal.classList.remove('opacity-0', 'pointer-events-none');
@@ -505,8 +510,8 @@
          */
         function hideModal() {
             affectedForm.reset();
-            // Re-fill the read-only EIN field after reset
-            affectedEinInput.value = userEIN; 
+            // Re-fill the read-only Name field after reset
+            affectedNameInput.value = userName; // MODIFIED
             
             const errorMsg = document.getElementById('modal-error-msg');
             errorMsg.textContent = '';
@@ -577,9 +582,9 @@
                 currentPage = 'known'; // Guides can't see submit page
             }
             
-            // Auto-fill submit form EIN if on that page
+            // Auto-fill submit form Name if on that page
             if (currentPage === 'submit') {
-                ticketEinInput.value = userEIN;
+                ticketNameInput.value = userName; // MODIFIED
             }
 
             // Hide all pages
@@ -645,14 +650,28 @@
         /**
          * NEW: Helper function to complete the login process
          */
-        function loginSuccess(role, ein) {
+        async function loginSuccess(role, name) { // MODIFIED: ein to name
             userRole = role;
-            userEIN = ein;
+            userName = name; // MODIFIED
 
             // Save to localStorage
             localStorage.setItem('userRole', userRole);
-            localStorage.setItem('userEIN', userEIN);
+            localStorage.setItem('userName', userName); // MODIFIED
             
+            // --- ADDED: Log Login Activity ---
+            try {
+                const activityLogRef = collection(db, activityLogCollectionPath);
+                await addDoc(activityLogRef, {
+                    timestamp: serverTimestamp(),
+                    userName: name,
+                    userRole: role,
+                    action: 'LOGIN'
+                });
+            } catch (error) {
+                console.error("Failed to log login activity: ", error);
+            }
+            // --- End Log ---
+
             // Set default page based on role
             if (userRole === 'tl') {
                 currentPage = 'submit';
@@ -673,11 +692,11 @@
          */
         async function handleAppLogin(e) {
             e.preventDefault();
-            const ein = einInput.value.trim();
+            const name = nameInput.value.trim(); // MODIFIED
             const tlCode = tlCodeInput.value.trim();
 
-            if (!ein) {
-                loginErrorMsg.textContent = 'Please enter your EIN.';
+            if (!name) { // MODIFIED
+                loginErrorMsg.textContent = 'Please enter your Name.'; // MODIFIED
                 loginErrorMsg.classList.remove('hidden');
                 return;
             }
@@ -695,14 +714,14 @@
 
                     if (tlCodeDoc.exists()) {
                         // Valid TL code
-                        loginSuccess('tl', ein);
+                        loginSuccess('tl', name); // MODIFIED
                     } else {
                         // Invalid TL code
                         throw new Error("Invalid TL Code. Please try again.");
                     }
                 } else {
                     // No TL code, log in as guide
-                    loginSuccess('guide', ein);
+                    loginSuccess('guide', name); // MODIFIED
                 }
             } catch (error) {
                 // Handle any errors (invalid code, network issues)
@@ -721,9 +740,9 @@
          * Logs the user out by clearing their role and reloading
          */
         function handleLogout() {
-            // Clear both role and EIN
+            // Clear both role and Name
             localStorage.removeItem('userRole');
-            localStorage.removeItem('userEIN');
+            localStorage.removeItem('userName'); // MODIFIED
             location.reload();
         }
 
@@ -732,14 +751,14 @@
          * If not, shows the login modal. If so, starts the app.
          */
         function checkAppLogin() {
-            // Check for both role and EIN
+            // Check for both role and Name
             const savedRole = localStorage.getItem('userRole');
-            const savedEIN = localStorage.getItem('userEIN');
+            const savedName = localStorage.getItem('userName'); // MODIFIED
             
-            if (savedRole && savedEIN) {
+            if (savedRole && savedName) { // MODIFIED
                 // User is already "logged in", set globals and start the app
                 userRole = savedRole;
-                userEIN = savedEIN;
+                userName = savedName; // MODIFIED
                 loginModal.classList.add('hidden');
 
                 // Set default page based on role (for page load)
@@ -753,7 +772,7 @@
                 appLoader.classList.remove('hidden'); // ADDED: Show loader
                 initializeAppLogic();
             } else {
-                // No role/EIN saved, show the login modal
+                // No role/Name saved, show the login modal
                 loginModal.classList.remove('hidden');
                 appLoader.classList.add('hidden'); // ADDED: Ensure loader is hidden
             }
@@ -811,13 +830,13 @@
             // 1. Set up UI based on role
             renderUIForRole();
             
-            // 2. Set user EIN in header
-            userEinDisplay.textContent = userEIN;
+            // 2. Set user Name in header
+            userNameDisplay.textContent = userName; // MODIFIED
 
             // 4. Sign in the user (Firebase auth)
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
-                    userId = user.uid; // This is the ANONYMOUS id, not the EIN
+                    userId = user.uid; // This is the ANONYMOUS id, not the Name
                     
                     ticketsCollectionRef = collection(db, ticketsCollectionPath);
                     onSnapshot(query(ticketsCollectionRef), renderApp);
@@ -877,7 +896,7 @@
                         loginErrorMsg.classList.remove('hidden');
                         // Clear local data so they have to "log in" again
                         localStorage.removeItem('userRole');
-                        localStorage.removeItem('userEIN');
+                        localStorage.removeItem('userName'); // MODIFIED
                     }
                 }
             });
@@ -1058,7 +1077,7 @@
             const numAffected = dailyAffectedUsers.length;
             
             // 4. Check if this user is in the "daily" list
-            const userIsAffected = dailyAffectedUsers.some(user => user.ein === userEIN);
+            const userIsAffected = dailyAffectedUsers.some(user => user.name === userName); // MODIFIED
             // --- END OF DAILY RESET LOGIC ---
 
             // --- START: Time Open Logic ---
@@ -1115,7 +1134,7 @@
 
             // Metric counters
             let totalAffectedCount = 0;
-            let uniqueAffectedEINs = new Set(); // For unique guide counting
+            let uniqueAffectedNames = new Set(); // MODIFIED: For unique user counting
             
             // Arrays for sorting
             let pendingTickets = [];
@@ -1154,8 +1173,8 @@
                     // Add to global daily metrics
                     totalAffectedCount += dailyAffectedUsers.length;
                     dailyAffectedUsers.forEach(user => {
-                        if (user.ein) { 
-                            uniqueAffectedEINs.add(user.ein);
+                        if (user.name) { // MODIFIED
+                            uniqueAffectedNames.add(user.name); // MODIFIED
                         }
                     });
                     // --- End Daily Metrics ---
@@ -1184,7 +1203,8 @@
                     el.innerHTML = `
                         <h3 class="font-semibold text-lg">${ticket.title}</h3>
                         <p class="text-sm text-slate-600 mb-2">${ticket.description}</p>
-                        <p class="text-xs text-slate-400 mb-1">Submitted by EIN: ${ticket.ein} (Code: ${ticket.uniqueCode})</p>
+                        <!-- MODIFIED: "EIN" to "Name" -->
+                        <p class="text-xs text-slate-400 mb-1">Submitted by Name: ${ticket.name} (Code: ${ticket.uniqueCode})</p>
                         <p class="text-xs text-slate-400 mb-3">Submitted ${formatTimeAgo(ticket.createdAt)}</p>
                         <button data-id="${ticket.id}" class="approve-btn w-full bg-green-500 text-white text-sm font-medium py-1 px-3 rounded-lg hover:bg-green-600 transition">
                             Approve (Move to Known)
@@ -1248,7 +1268,7 @@
             // --- UPDATE METRICS ---
             // Metrics are now calculated *daily* in the loop above
             metricTotalAffected.textContent = totalAffectedCount;
-            metricUniqueAffected.textContent = uniqueAffectedEINs.size; // Set unique count
+            metricUniqueAffected.textContent = uniqueAffectedNames.size; // MODIFIED: Set unique count
             
             // --- Update Top 5 List ---
             top5List.innerHTML = ''; // Clear old list
@@ -1370,25 +1390,41 @@
             e.preventDefault();
             const title = document.getElementById('ticket-title').value;
             const description = document.getElementById('ticket-desc').value;
-            const ein = ticketEinInput.value; // Get auto-filled EIN
+            const name = ticketNameInput.value; // MODIFIED: Get auto-filled Name
             const uniqueCode = document.getElementById('ticket-code').value;
 
-            if (!title || !description || !userId || !ein || !uniqueCode) return;
+            if (!title || !description || !userId || !name || !uniqueCode) return; // MODIFIED
 
             try {
                 await addDoc(ticketsCollectionRef, {
                     title: title,
                     description: description,
-                    ein: ein, // Save the submitter's EIN
+                    name: name, // MODIFIED: Save the submitter's Name
                     uniqueCode: uniqueCode,
                     status: 'PENDING', // Initial status
                     createdAt: serverTimestamp(),
                     submitterId: userId, // Firebase auth ID
                     affectedUsers: [] 
                 });
+
+                // --- ADDED: Log Submit Ticket Activity ---
+                try {
+                    const activityLogRef = collection(db, activityLogCollectionPath);
+                    await addDoc(activityLogRef, {
+                        timestamp: serverTimestamp(),
+                        userName: userName,
+                        userRole: userRole,
+                        action: 'SUBMIT_TICKET',
+                        ticketTitle: title
+                    });
+                } catch (error) {
+                    console.error("Failed to log submit activity: ", error);
+                }
+                // --- End Log ---
+
                 newTicketForm.reset();
-                // Re-fill EIN after reset
-                ticketEinInput.value = userEIN; 
+                // Re-fill Name after reset
+                ticketNameInput.value = userName; // MODIFIED
                 
                 // Switch to pending page after submission
                 currentPage = 'pending';
@@ -1432,18 +1468,18 @@
         async function handleAffectedSubmit(e) {
             e.preventDefault();
             const ticketId = affectedTicketIdInput.value;
-            const ein = affectedEinInput.value; // Get auto-filled EIN
+            const name = affectedNameInput.value; // MODIFIED: Get auto-filled Name
             const comments = affectedCommentsInput.value;
             const errorMsg = document.getElementById('modal-error-msg');
 
-            if (!ticketId || !ein || !userId) return;
+            if (!ticketId || !name || !userId) return; // MODIFIED
 
             errorMsg.textContent = '';
             errorMsg.classList.add('hidden');
             
             const newAffectedEntry = {
                 userId: userId, // Firebase auth ID
-                ein: ein,       // User's EIN
+                name: name,       // MODIFIED: User's Name
                 comments: comments,
                 // MODIFIED: Store the timestamp of the report
                 timestamp: new Date() // Use client-side date
@@ -1457,10 +1493,10 @@
                     const ticket = ticketDoc.data();
                     const affectedUsers = ticket.affectedUsers || [];
 
-                    // MODIFIED: Check if EIN is already in the list *for today*
+                    // MODIFIED: Check if Name is already in the list *for today*
                     const startOfToday = getStartOfDay();
                     const isAlreadyAffected = affectedUsers.some(user => {
-                        return user.ein === ein && 
+                        return user.name === name && // MODIFIED
                             user.timestamp && 
                             user.timestamp.toDate() > startOfToday;
                     });
@@ -1468,7 +1504,7 @@
                     // --- FIX 2: START ---
                     // This logic was broken by a copy-paste error.
                     if (isAlreadyAffected) {
-                        errorMsg.textContent = 'You have already reported this issue today.';
+                        errorMsg.textContent = 'You have already reported this issue today.'; // MODIFIED
                         errorMsg.classList.remove('hidden');
                     } else {
                         // Not already affected, add the new entry
@@ -1476,6 +1512,22 @@
                         await updateDoc(ticketRef, {
                             affectedUsers: affectedUsers
                         });
+
+                        // --- ADDED: Log Report Affected Activity ---
+                        try {
+                            const activityLogRef = collection(db, activityLogCollectionPath);
+                            await addDoc(activityLogRef, {
+                                timestamp: serverTimestamp(),
+                                userName: userName,
+                                userRole: userRole,
+                                action: 'REPORT_AFFECTED',
+                                ticketTitle: ticket.title // Get title from the doc we already fetched
+                            });
+                        } catch (error) {
+                            console.error("Failed to log affected activity: ", error);
+                        }
+                        // --- End Log ---
+
                         hideModal();
                     }
                     // --- FIX 2: END ---
