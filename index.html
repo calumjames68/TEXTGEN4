@@ -470,6 +470,7 @@
         const pageContents = document.querySelectorAll('.page-content');
         const headerTitle = document.getElementById('header-title');
         const submitNavBtn = document.querySelector('.nav-link[data-page="submit"]');
+        const pendingNavBtn = document.querySelector('.nav-link[data-page="pending"]'); // ADDED
         const logoutBtn = document.getElementById('logout-btn');
         const headerLogoutBtn = document.getElementById('header-logout-btn'); // Header logout button
 
@@ -617,6 +618,10 @@
             if (userRole === 'guide' && currentPage === 'submit') {
                 currentPage = 'known'; // Guides can't see submit page
             }
+            // ADDED: Redirect for pending page
+            if (userRole === 'guide' && currentPage === 'pending') {
+                currentPage = 'known'; // Guides can't see pending page
+            }
             
             // Auto-fill submit form Name if on that page
             if (currentPage === 'submit') {
@@ -672,11 +677,13 @@
 
             if (userRole === 'guide') {
                 submitNavBtn.style.display = 'none'; // Hide "Submit Issue" link
+                if (pendingNavBtn) pendingNavBtn.style.display = 'none'; // ADDED: Hide "Pending" link
                 // ADDED: Hide download buttons for guides
                 if (downloadCompletedBtn) downloadCompletedBtn.style.display = 'none';
                 if (downloadMetricsBtn) downloadMetricsBtn.style.display = 'none';
             } else if (userRole === 'tl') {
                 submitNavBtn.style.display = 'block'; // Ensure "Submit Issue" link is visible
+                if (pendingNavBtn) pendingNavBtn.style.display = 'block'; // ADDED: Show "Pending" link
                 // ADDED: Show download buttons for TLs
                 if (downloadCompletedBtn) downloadCompletedBtn.style.display = 'block';
                 if (downloadMetricsBtn) downloadMetricsBtn.style.display = 'block';
