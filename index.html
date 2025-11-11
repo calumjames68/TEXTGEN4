@@ -340,8 +340,8 @@
                 
                 <div id="login-error-msg" class="text-red-600 text-sm pt-1 hidden"></div>
                 
-                <!-- MODIFIED: Color -->
-                <button type="submit" class="w-full bg-primary text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:bg-primary/90 transition duration-150 mt-4">
+                <!-- MODIFIED: Color and ADDED id="login-btn" -->
+                <button type="submit" id="login-btn" class="w-full bg-primary text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:bg-primary/90 transition duration-150 mt-4">
                     Login
                 </button>
             </form>
@@ -384,6 +384,8 @@
         
         // Use a simple root collection path for your own database
         const ticketsCollectionPath = `tickets`;
+        // ADDED: New collection path for TL codes
+        const tlCodesCollectionPath = `tl_codes`;
         
         let globalSnapshot = null; // To store the latest data for metric re-calculation
         let currentPage = null; // To track the visible page. Will be set by login logic.
@@ -450,6 +452,7 @@
         const tlCodeInput = document.getElementById('tl-code-input');
         const loginErrorMsg = document.getElementById('login-error-msg');
         const appLoader = document.getElementById('app-loader'); // ADDED
+        const loginButton = document.getElementById('login-btn'); // ADDED
         
         // Header Display
         const userEinDisplay = document.getElementById('user-ein-display');
@@ -622,36 +625,29 @@
         function renderUIForRole() {
             if (!userRole) return; // Should not happen
 
+            // Get download buttons
+            const downloadCompletedBtn = document.getElementById('download-completed-btn');
+            const downloadMetricsBtn = document.getElementById('download-metrics-btn');
+
             if (userRole === 'guide') {
                 submitNavBtn.style.display = 'none'; // Hide "Submit Issue" link
+                // ADDED: Hide download buttons for guides
+                downloadCompletedBtn.style.display = 'none';
+                downloadMetricsBtn.style.display = 'none';
             } else if (userRole === 'tl') {
                 submitNavBtn.style.display = 'block'; // Ensure "Submit Issue" link is visible
+                // ADDED: Show download buttons for TLs
+                downloadCompletedBtn.style.display = 'block';
+                downloadMetricsBtn.style.display = 'block';
             }
         }
 
         /**
-         * Handles the login logic (Guide button or TL form)
+         * NEW: Helper function to complete the login process
          */
-        function handleAppLogin(e) {
-            e.preventDefault();
-            const ein = einInput.value.trim();
-            const tlCode = tlCodeInput.value.trim();
-
-            if (!ein) {
-                loginErrorMsg.textContent = 'Please enter your EIN.';
-                loginErrorMsg.classList.remove('hidden');
-                return;
-            }
-
-            // This is where you would validate the TL code.
-            // For this demo, we'll accept any non-empty code as a "TL".
-            if (tlCode) {
-                userRole = 'tl';
-            } else {
-                userRole = 'guide';
-            }
-            
-            userEIN = ein; // Save the EIN
+        function loginSuccess(role, ein) {
+            userRole = role;
+            userEIN = ein;
 
             // Save to localStorage
             localStorage.setItem('userRole', userRole);
@@ -666,9 +662,60 @@
 
             loginErrorMsg.classList.add('hidden');
             loginModal.classList.add('hidden'); // Hide modal
-            appLoader.classList.remove('hidden'); // ADDED: Show loader
+            appLoader.classList.remove('hidden'); // Show loader
             initializeAppLogic(); // Start the main app
         }
+
+
+        /**
+         * Handles the login logic (Guide button or TL form)
+         * MODIFIED: Now async and checks Firestore for TL code
+         */
+        async function handleAppLogin(e) {
+            e.preventDefault();
+            const ein = einInput.value.trim();
+            const tlCode = tlCodeInput.value.trim();
+
+            if (!ein) {
+                loginErrorMsg.textContent = 'Please enter your EIN.';
+                loginErrorMsg.classList.remove('hidden');
+                return;
+            }
+
+            // Set loading state
+            loginButton.disabled = true;
+            loginButton.textContent = 'Logging in...';
+            loginErrorMsg.classList.add('hidden');
+
+            try {
+                if (tlCode) {
+                    // A TL code was entered, check if it's valid
+                    const tlCodeRef = doc(db, tlCodesCollectionPath, tlCode);
+                    const tlCodeDoc = await getDoc(tlCodeRef);
+
+                    if (tlCodeDoc.exists()) {
+                        // Valid TL code
+                        loginSuccess('tl', ein);
+                    } else {
+                        // Invalid TL code
+                        throw new Error("Invalid TL Code. Please try again.");
+                    }
+                } else {
+                    // No TL code, log in as guide
+                    loginSuccess('guide', ein);
+                }
+            } catch (error) {
+                // Handle any errors (invalid code, network issues)
+                console.error("Login Error: ", error);
+                loginErrorMsg.textContent = error.message;
+                loginErrorMsg.classList.remove('hidden');
+                // Reset login button
+                loginButton.disabled = false;
+                loginButton.textContent = 'Login';
+            }
+        }
+
+        // <!-- FIX: Removed the duplicate, non-async handleAppLogin function -->
 
         /**
          * Logs the user out by clearing their role and reloading
