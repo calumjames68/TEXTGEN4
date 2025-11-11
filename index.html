@@ -201,7 +201,13 @@
                 <!-- Page 4: Completed Issues (Archive) -->
                 <div id="page-completed" class="page-content hidden">
                     <section class="bg-white p-6 rounded-lg shadow-md">
-                        <p class="text-sm text-slate-500 mb-4">Resolved issues are stored here.</p>
+                        <div class="flex justify-between items-center mb-4">
+                            <p class="text-sm text-slate-500">Resolved issues are stored here.</p>
+                            <!-- ADDED: Download Button -->
+                            <button id="download-completed-btn" class="bg-secondary text-white font-semibold py-2 px-4 rounded-lg hover:bg-secondary/90 transition text-sm">
+                                Download Report (CSV)
+                            </button>
+                        </div>
                         <div id="completed-tickets-list" class="space-y-4">
                             <!-- Completed tickets will be injected here by JS -->
                             <p class="text-slate-400">No completed issues...</p>
@@ -212,6 +218,12 @@
                 <!-- Page 5: Metrics Section -->
                 <div id="page-metrics" class="page-content hidden">
                     <section class="bg-white p-6 rounded-lg shadow-md">
+                        <!-- ADDED: Download Button Wrapper -->
+                        <div class="flex justify-end mb-4">
+                            <button id="download-metrics-btn" class="bg-secondary text-white font-semibold py-2 px-4 rounded-lg hover:bg-secondary/90 transition text-sm">
+                                Download Report (CSV)
+                            </button>
+                        </div>
                         <!-- Top row: Summary boxes -->
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
                             <!-- Metric Display 1 -->
@@ -394,6 +406,10 @@
         const newIssuesList = document.getElementById('new-issues-list');
         const completedTicketsList = document.getElementById('completed-tickets-list');
         
+        // ADDED: Download Buttons
+        const downloadCompletedBtn = document.getElementById('download-completed-btn');
+        const downloadMetricsBtn = document.getElementById('download-metrics-btn');
+
         // Metric DOM Elements
         const metricTotalAffected = document.getElementById('metric-total-affected');
         const metricUniqueAffected = document.getElementById('metric-unique-affected');
@@ -773,6 +789,10 @@
                     completeModalCancelBtn.addEventListener('click', hideCompleteModal);
                     completeForm.addEventListener('submit', handleCompleteSubmit);
 
+                    // ADDED: Download button listeners
+                    downloadCompletedBtn.addEventListener('click', downloadCompletedReport);
+                    downloadMetricsBtn.addEventListener('click', downloadMetricsReport);
+
                     // New Nav Listeners
                     hamburgerBtn.addEventListener('click', showSidebar);
                     sidebarOverlay.addEventListener('click', hideSidebar);
@@ -810,6 +830,111 @@
         }
 
         // --- END NEW Role-Based Functions ---
+
+        // --- NEW: Download Report Functions ---
+
+        /**
+         * Helper function to escape text for a CSV cell.
+         * Wraps in quotes, and doubles any existing quotes.
+         */
+        function escapeCSV(str) {
+            if (str === null || str === undefined) str = "";
+            let result = String(str);
+            // Check if it contains commas, quotes, or newlines
+            if (result.search(/("|,|\n)/g) >= 0) {
+                // Wrap in double quotes and escape existing quotes
+                result = '"' + result.replace(/"/g, '""') + '"';
+            }
+            return result;
+        }
+
+        /**
+         * Helper function to trigger a CSV download.
+         */
+        function downloadCSV(csvContent, fileName) {
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            if (link.download !== undefined) {
+                const url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", fileName);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        }
+
+        /**
+         * Generates and downloads a report of completed issues.
+         */
+        function downloadCompletedReport() {
+            if (!globalSnapshot) {
+                console.error("Data not loaded yet.");
+                return;
+            }
+
+            let csvRows = ["Title,Description,Resolution,Completed At"];
+            let completedTickets = [];
+
+            globalSnapshot.forEach(doc => {
+                if (doc.data().status === 'COMPLETE') {
+                    completedTickets.push(doc.data());
+                }
+            });
+
+            // Sort by most recently completed
+            completedTickets.sort((a, b) => (b.completedAt?.toDate() || 0) - (a.completedAt?.toDate() || 0));
+
+            completedTickets.forEach(ticket => {
+                const title = escapeCSV(ticket.title);
+                const desc = escapeCSV(ticket.description);
+                const resolution = escapeCSV(ticket.fixDescription);
+                const completedAt = escapeCSV(ticket.completedAt ? ticket.completedAt.toDate().toLocaleString() : 'N/A');
+                csvRows.push(`${title},${desc},${resolution},${completedAt}`);
+            });
+
+            downloadCSV(csvRows.join("\n"), "completed_issues_report.csv");
+        }
+
+        /**
+         * Generates and downloads a report of the daily metrics.
+         */
+        function downloadMetricsReport() {
+            if (!globalSnapshot) {
+                console.error("Data not loaded yet.");
+                return;
+            }
+
+            let csvRows = ["Title,Daily Affected Count,Type"];
+            let knownTickets = [];
+            const startOfToday = getStartOfDay();
+
+            globalSnapshot.forEach(doc => {
+                const ticket = doc.data();
+                if (ticket.status === 'KNOWN') {
+                    const affectedUsers = ticket.affectedUsers || [];
+                    const dailyAffectedUsers = affectedUsers.filter(user => {
+                        return user.timestamp && user.timestamp.toDate() > startOfToday;
+                    });
+                    ticket.dailyAffectedCount = dailyAffectedUsers.length;
+                    knownTickets.push(ticket);
+                }
+            });
+
+            // Sort by most affected
+            knownTickets.sort((a, b) => (b.dailyAffectedCount || 0) - (a.dailyAffectedCount || 0));
+
+            knownTickets.forEach(ticket => {
+                const title = escapeCSV(ticket.title);
+                const count = ticket.dailyAffectedCount;
+                const type = escapeCSV(ticket.isPermanent ? "Permanent" : "New & Important");
+                csvRows.push(`${title},${count},${type}`);
+            });
+
+            downloadCSV(csvRows.join("\n"), "daily_metrics_report.csv");
+        }
+
 
         // --- NEW: Permanent Issue Seeding ---
 
@@ -858,6 +983,8 @@
             }
         }
 
+        // <!-- FIX: Changed HTML comment to JS comment -->
+        // ADDED: renderTicketCard function definition
         /**
          * Renders a single ticket card into the specified list.
          */
@@ -875,14 +1002,7 @@
             
             // 2. Use the "daily" count for all UI
             const numAffected = dailyAffectedUsers.length;
-            // totalAffectedCount += numAffected; // This is now calculated in renderApp
-            // 3. Add to unique set for "daily" unique guides
-            // dailyAffectedUsers.forEach(user => { // This is now calculated in renderApp
-            //     if (user.ein) { 
-            //         uniqueAffectedEINs.add(user.ein);
-            //     }
-            // });
-
+            
             // 4. Check if this user is in the "daily" list
             const userIsAffected = dailyAffectedUsers.some(user => user.ein === userEIN);
             // --- END OF DAILY RESET LOGIC ---
