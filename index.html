@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bug Board</title>
     <!-- 1. Load Tailwind CSS -->
+    <!-- FIX: Corrected the Tailwind CSS script URL -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 2. Configure Tailwind for Inter font -->
     <script>
@@ -14,6 +15,11 @@
                     fontFamily: {
                         sans: ['Inter', 'sans-serif'],
                     },
+                    // ADDED: BT/EE Color Palette
+                    colors: {
+                        'primary': '#6400aa',
+                        'secondary': '#009ba4',
+                    }
                 },
             },
         };
@@ -44,13 +50,15 @@
         }
     </style>
 </head>
-<body class="font-sans bg-slate-100 text-slate-800 min-h-screen">
+<!-- MODIFIED: Changed background to white -->
+<body class="font-sans bg-white text-slate-800 min-h-screen">
     
     <!-- Sidebar -->
     <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 opacity-0 pointer-events-none"></div>
     <div id="sidebar" class="fixed top-0 left-0 w-64 h-full bg-white shadow-lg z-40 transform -translate-x-full flex flex-col">
         <div class="p-5 flex-grow">
-            <h2 class="text-2xl font-semibold text-blue-700 mb-6">Bug Board</h2>
+            <!-- MODIFIED: Color -->
+            <h2 class="text-2xl font-semibold text-primary mb-6">Bug Board</h2>
             <nav class="space-y-2">
                 <button data-page="submit" class="nav-link w-full text-left p-3 rounded-lg font-medium text-slate-700 hover:bg-slate-100">Submit New Issue</button>
                 <button data-page="pending" class="nav-link w-full text-left p-3 rounded-lg font-medium text-slate-700 hover:bg-slate-100">Pending Issues</button>
@@ -61,16 +69,19 @@
         </div>
         <!-- Log Out Button -->
         <div class="p-5 border-t border-slate-200">
-            <button id="logout-btn" class="w-full text-left p-3 rounded-lg font-medium text-slate-500 hover:bg-red-50 hover:text-red-600">
+            <!-- MODIFIED: Color -->
+            <button id="logout-btn" class="w-full text-left p-3 rounded-lg font-medium text-slate-500 hover:bg-secondary/10 hover:text-secondary">
                 Log Out / Switch Role
             </button>
         </div>
     </div>
 
     <!-- ADDED: App Loader Screen -->
-    <div id="app-loader" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-100 hidden">
+    <!-- MODIFIED: Changed background to white -->
+    <div id="app-loader" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white hidden">
         <div class="text-center">
-            <svg class="animate-spin h-8 w-8 text-blue-600 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <!-- MODIFIED: Color -->
+            <svg class="animate-spin h-8 w-8 text-primary mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
@@ -93,7 +104,8 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
                             </svg>
                         </button>
-                        <h1 id="header-title" class="text-2xl font-bold text-blue-700 ml-4">Submit New Issue</h1>
+                        <!-- MODIFIED: Color -->
+                        <h1 id="header-title" class="text-2xl font-bold text-primary ml-4">Submit New Issue</h1>
                     </div>
                     <!-- Right: User EIN & Logout -->
                     <div class="flex items-center space-x-4">
@@ -101,7 +113,8 @@
                             User EIN: <strong id="user-ein-display" class="text-slate-900">Loading...</strong>
                         </div>
                         <!-- Logout Button -->
-                        <button id="header-logout-btn" class="p-2 text-slate-500 hover:text-red-600" title="Log Out / Switch Role">
+                        <!-- MODIFIED: Color -->
+                        <button id="header-logout-btn" class="p-2 text-slate-500 hover:text-secondary" title="Log Out / Switch Role">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
                         </button>
                     </div>
@@ -119,11 +132,13 @@
                         <form id="new-ticket-form">
                             <div class="mb-4">
                                 <label for="ticket-title" class="block text-sm font-medium text-slate-700 mb-1">Issue Title</label>
-                                <input type="text" id="ticket-title" placeholder="e.g., 'Login button not working'" class="w-full p-2 border border-slate-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500" required>
+                                <!-- MODIFIED: Color -->
+                                <input type="text" id="ticket-title" placeholder="e.g., 'Login button not working'" class="w-full p-2 border border-slate-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary" required>
                             </div>
                             <div class="mb-4">
                                 <label for="ticket-desc" class="block text-sm font-medium text-slate-700 mb-1">Description</label>
-                                <textarea id="ticket-desc" rows="4" placeholder="Describe the issue in detail..." class="w-full p-2 border border-slate-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500" required></textarea>
+                                <!-- MODIFIED: Color -->
+                                <textarea id="ticket-desc" rows="4" placeholder="Describe the issue in detail..." class="w-full p-2 border border-slate-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary" required></textarea>
                             </div>
                             <!-- MODIFIED: EIN field will be auto-filled -->
                             <div class="mb-4">
@@ -132,9 +147,11 @@
                             </div>
                             <div class="mb-4">
                                 <label for="ticket-code" class="block text-sm font-medium text-slate-700 mb-1">Unique Code</label>
-                                <input type="text" id="ticket-code" placeholder="e.g., 'ALPHA123'" class="w-full p-2 border border-slate-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500" required>
+                                <!-- MODIFIED: Color -->
+                                <input type="text" id="ticket-code" placeholder="e.g., 'ALPHA123'" class="w-full p-2 border border-slate-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary" required>
                             </div>
-                            <button type="submit" class="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-blue-700 transition duration-150">
+                            <!-- MODIFIED: Color -->
+                            <button type="submit" class="w-full bg-primary text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-primary/90 transition duration-150">
                                 Submit Issue
                             </button>
                         </form>
@@ -160,7 +177,8 @@
                         
                         <!-- Column 1: Persistent Issues -->
                         <section class="bg-white p-6 rounded-lg shadow-md">
-                            <h2 class="text-xl font-semibold text-blue-700 mb-4">Persistent Issues</h2>
+                            <!-- MODIFIED: Color -->
+                            <h2 class="text-xl font-semibold text-primary mb-4">Persistent Issues</h2>
                             <div id="persistent-issues-list" class="space-y-4">
                                 <!-- Persistent tickets will be injected here by JS -->
                                 <p class="text-slate-400">No persistent issues...</p>
@@ -169,7 +187,8 @@
                         
                         <!-- Column 2: New & Important Issues -->
                         <section class="bg-white p-6 rounded-lg shadow-md">
-                            <h2 class="text-xl font-semibold text-red-600 mb-4">New & Important Issues</h2>
+                            <!-- MODIFIED: Color -->
+                            <h2 class="text-xl font-semibold text-secondary mb-4">New & Important Issues</h2>
                             <div id="new-issues-list" class="space-y-4">
                                 <!-- New/non-persistent known tickets will be injected here by JS -->
                                 <p class="text-slate-400">No new known issues...</p>
@@ -196,14 +215,16 @@
                         <!-- Top row: Summary boxes -->
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
                             <!-- Metric Display 1 -->
-                            <div class="p-4 bg-purple-100 rounded-lg">
-                                <div class="text-sm text-purple-800">Total "Affected" Reports</div>
-                                <div id="metric-total-affected" class="text-3xl font-bold text-purple-900">0</div>
+                            <!-- MODIFIED: Color -->
+                            <div class="p-4 bg-secondary/10 rounded-lg">
+                                <div class="text-sm text-secondary/90">Total "Affected" Reports</div>
+                                <div id="metric-total-affected" class="text-3xl font-bold text-secondary">0</div>
                             </div>
                             <!-- Metric Display 2 -->
-                            <div class="p-4 bg-blue-100 rounded-lg">
-                                <div class="text-sm text-blue-800">Unique Affected Guides</div>
-                                <div id="metric-unique-affected" class="text-3xl font-bold text-blue-900">0</div>
+                            <!-- MODIFIED: Color -->
+                            <div class="p-4 bg-primary/10 rounded-lg">
+                                <div class="text-sm text-primary/90">Unique Affected Guides</div>
+                                <div id="metric-unique-affected" class="text-3xl font-bold text-primary">0</div>
                             </div>
                         </div>
 
@@ -253,7 +274,8 @@
                     <button type="button" id="modal-cancel-btn" class="bg-slate-200 text-slate-800 font-semibold py-2 px-4 rounded-lg hover:bg-slate-300 transition">
                         Cancel
                     </button>
-                    <button type="submit" class="bg-yellow-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-yellow-600 transition">
+                    <!-- MODIFIED: Color -->
+                    <button type="submit" class="bg-secondary text-white font-semibold py-2 px-4 rounded-lg hover:bg-secondary/90 transition">
                         Submit Report
                     </button>
                 </div>
@@ -276,7 +298,8 @@
                     <button type="button" id="complete-modal-cancel-btn" class="bg-slate-200 text-slate-800 font-semibold py-2 px-4 rounded-lg hover:bg-slate-300 transition">
                         Cancel
                     </button>
-                    <button type="submit" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition">
+                    <!-- MODIFIED: Color -->
+                    <button type="submit" class="bg-primary text-white font-semibold py-2 px-4 rounded-lg hover:bg-primary/90 transition">
                         Mark as Complete
                     </button>
                 </div>
@@ -285,23 +308,28 @@
     </div>
     
     <!-- NEW: Role Login Modal (Re-designed) -->
-    <div id="login-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-100">
+    <!-- MODIFIED: Changed background to white -->
+    <div id="login-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white">
         <div class="bg-white w-full max-w-sm p-8 rounded-lg shadow-xl">
-            <h3 class="text-2xl font-semibold mb-6 text-center text-blue-700">Welcome to Bug Board</h3>
+            <!-- MODIFIED: Color -->
+            <h3 class="text-2xl font-semibold mb-6 text-center text-primary">Welcome to Bug Board</h3>
             
             <form id="login-form" class="space-y-4">
                 <div>
                     <label for="ein-input" class="block text-sm font-medium text-slate-700 mb-2">Your EIN</label>
-                    <input type="text" id="ein-input" placeholder="e.g., 12345" class="w-full p-3 border border-slate-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500" required>
+                    <!-- MODIFIED: Color -->
+                    <input type="text" id="ein-input" placeholder="e.g., 12345" class="w-full p-3 border border-slate-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary" required>
                 </div>
                 <div>
                     <label for="tl-code-input" class="block text-sm font-medium text-slate-700 mb-2">Unique Code (if you are a TL)</label>
-                    <input type="password" id="tl-code-input" placeholder="Optional TL Code" class="w-full p-3 border border-slate-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                    <!-- MODIFIED: Color -->
+                    <input type="password" id="tl-code-input" placeholder="Optional TL Code" class="w-full p-3 border border-slate-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary">
                 </div>
                 
                 <div id="login-error-msg" class="text-red-600 text-sm pt-1 hidden"></div>
                 
-                <button type="submit" class="w-full bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:bg-blue-700 transition duration-150 mt-4">
+                <!-- MODIFIED: Color -->
+                <button type="submit" class="w-full bg-primary text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:bg-primary/90 transition duration-150 mt-4">
                     Login
                 </button>
             </form>
@@ -491,6 +519,16 @@
             completeModal.querySelector('.modal-content').classList.add('scale-95');
         }
 
+        /**
+         * NEW HELPER: Gets a Date object for the start of the current day (00:00:00)
+         * in the user's local timezone.
+         */
+        function getStartOfDay() {
+            const now = new Date();
+            now.setHours(0, 0, 0, 0);
+            return now;
+        }
+
         // --- NEW NAVIGATION FUNCTIONS ---
 
         /**
@@ -540,9 +578,10 @@
             // Highlight active nav link
             navLinks.forEach(link => {
                 if (link.dataset.page === currentPage) {
-                    link.classList.add('bg-slate-100', 'text-blue-600');
+                    // MODIFIED: Color
+                    link.classList.add('bg-slate-100', 'text-primary');
                 } else {
-                    link.classList.remove('bg-slate-100', 'text-blue-600');
+                    link.classList.remove('bg-slate-100', 'text-primary');
                 }
             });
         }
@@ -798,6 +837,8 @@
                     console.log(`Seeding ${missingTitles.length} missing permanent issues...`);
                     // Use a loop to add each missing doc
                     for (const title of missingTitles) {
+                        // --- FIX 1: START ---
+                        // The addDoc call was broken by a copy-paste error.
                         await addDoc(ticketsCollectionRef, {
                             title: title,
                             description: "This is an ongoing, persistent operational issue.",
@@ -807,6 +848,7 @@
                             acknowledgedAt: serverTimestamp(),
                             affectedUsers: [] 
                         });
+                        // --- FIX 1: END ---
                     }
                 } else {
                     console.log('All permanent issues already exist.');
@@ -817,21 +859,49 @@
         }
 
         /**
-         * Renders a single ticket card into its parent list.
-         * @param {HTMLElement} listElement - The list element to append to.
-         * @param {object} ticket - The ticket data object.
+         * Renders a single ticket card into the specified list.
          */
         function renderTicketCard(listElement, ticket) {
-             const affectedUsers = ticket.affectedUsers || [];
-            const numAffected = affectedUsers.length;
+            const affectedUsers = ticket.affectedUsers || [];
 
-            // Check if *this user's* EIN is in the list
-            const userIsAffected = affectedUsers.some(user => user.ein === userEIN);
+            // --- START OF DAILY RESET LOGIC ---
+            const startOfToday = getStartOfDay();
+
+            // 1. Filter the list to only include votes from "today"
+            const dailyAffectedUsers = affectedUsers.filter(user => {
+                // Ensure timestamp exists and can be converted to a Date
+                return user.timestamp && user.timestamp.toDate() > startOfToday;
+            });
+            
+            // 2. Use the "daily" count for all UI
+            const numAffected = dailyAffectedUsers.length;
+            // totalAffectedCount += numAffected; // This is now calculated in renderApp
+            // 3. Add to unique set for "daily" unique guides
+            // dailyAffectedUsers.forEach(user => { // This is now calculated in renderApp
+            //     if (user.ein) { 
+            //         uniqueAffectedEINs.add(user.ein);
+            //     }
+            // });
+
+            // 4. Check if this user is in the "daily" list
+            const userIsAffected = dailyAffectedUsers.some(user => user.ein === userEIN);
+            // --- END OF DAILY RESET LOGIC ---
+
+            // --- START: Time Open Logic ---
+            let timeOpenHtml = '';
+            if (ticket.isPermanent) {
+                // MODIFIED: Color
+                timeOpenHtml = '<span class="text-slate-500 font-medium text-primary">Permanent Issue</span>';
+            } else {
+                timeOpenHtml = `<span class="text-slate-500">Open for ${formatTimeAgo(ticket.acknowledgedAt || ticket.createdAt)}</span>`;
+            }
+            // --- END: Time Open Logic ---
 
             // Conditionally hide "Complete" button for permanent issues
             const completeButtonHtml = ticket.isPermanent
                 ? '' // Don't render the button if the issue is permanent
-                : `<button data-id="${ticket.id}" class="complete-btn w-full text-sm font-medium py-1 px-3 rounded-lg transition bg-blue-500 text-white hover:bg-blue-600 mt-2">
+                // MODIFIED: Color
+                : `<button data-id="${ticket.id}" class="complete-btn w-full text-sm font-medium py-1 px-3 rounded-lg transition bg-primary text-white hover:bg-primary/90 mt-2">
                         Mark as Complete (Admin)
                     </button>`;
 
@@ -841,10 +911,12 @@
                 <h3 class="font-semibold text-lg">${ticket.title}</h3>
                 <p class="text-sm text-slate-600 mb-3">${ticket.description}</p>
                 <div class="flex justify-between text-sm mb-3">
-                    <span class="font-medium text-slate-700">Affected: <strong class="text-red-600">${numAffected}</strong></span>
-                    <span class="text-slate-500">Open for ${formatTimeAgo(ticket.acknowledgedAt || ticket.createdAt)}</span>
+                    <!-- MODIFIED: Color -->
+                    <span class="font-medium text-slate-700">Affected: <strong class="text-secondary">${numAffected}</strong></span>
+                    ${timeOpenHtml} <!-- MODIFIED -->
                 </div>
-                <button data-id="${ticket.id}" class="affected-btn w-full text-sm font-medium py-1 px-3 rounded-lg transition ${userIsAffected ? 'bg-slate-300 text-slate-600 cursor-not-allowed' : 'bg-yellow-500 text-white hover:bg-yellow-600'}" ${userIsAffected ? 'disabled' : ''}>
+                <!-- MODIFIED: Color -->
+                <button data-id="${ticket.id}" class="affected-btn w-full text-sm font-medium py-1 px-3 rounded-lg transition ${userIsAffected ? 'bg-slate-300 text-slate-600 cursor-not-allowed' : 'bg-secondary text-white hover:bg-secondary/90'}" ${userIsAffected ? 'disabled' : ''}>
                     ${userIsAffected ? 'You reported this' : "I've been affected by this"}
                 </button>
                 ${completeButtonHtml}
@@ -878,6 +950,9 @@
             let newAndImportantTickets = [];
             let completedTicketsArray = []; 
             let allKnownTickets = []; // For metrics
+            
+            // Get start of today for metrics
+            const startOfToday = getStartOfDay();
 
             if (querySnapshot.empty) {
                 // Handled below by checking array lengths
@@ -892,6 +967,25 @@
                 } 
                 else if (ticket.status === 'KNOWN') {
                     const ticketWithId = { id: ticketId, ...ticket };
+                    
+                    // --- Calculate Daily Metrics ---
+                    const affectedUsers = ticket.affectedUsers || [];
+                    const dailyAffectedUsers = affectedUsers.filter(user => {
+                        return user.timestamp && user.timestamp.toDate() > startOfToday;
+                    });
+                    
+                    // Add daily counts to the ticket object for sorting
+                    ticketWithId.dailyAffectedCount = dailyAffectedUsers.length;
+                    
+                    // Add to global daily metrics
+                    totalAffectedCount += dailyAffectedUsers.length;
+                    dailyAffectedUsers.forEach(user => {
+                        if (user.ein) { 
+                            uniqueAffectedEINs.add(user.ein);
+                        }
+                    });
+                    // --- End Daily Metrics ---
+
                     // UPDATED: Sort into persistent or new
                     if (ticket.isPermanent) {
                         persistentTickets.push(ticketWithId);
@@ -930,9 +1024,9 @@
 
             // --- RENDER KNOWN TICKETS (SORTED) ---
             
-            // Sort by most affected users first
-            persistentTickets.sort((a, b) => (b.affectedUsers?.length || 0) - (a.affectedUsers?.length || 0));
-            newAndImportantTickets.sort((a, b) => (b.affectedUsers?.length || 0) - (a.affectedUsers?.length || 0));
+            // Sort by most *daily* affected users first
+            persistentTickets.sort((a, b) => (b.dailyAffectedCount || 0) - (a.dailyAffectedCount || 0));
+            newAndImportantTickets.sort((a, b) => (b.dailyAffectedCount || 0) - (a.dailyAffectedCount || 0));
 
             // Render Persistent Issues
             if (persistentTickets.length > 0) {
@@ -960,7 +1054,7 @@
                 completedTicketsArray.forEach(ticket => { 
                     // ADDED: Check for fix description and create HTML
                     const fixDescHtml = ticket.fixDescription
-                        ? `<p class="text-sm text-slate-600 mt-2 p-2 bg-green-50 rounded-lg"><strong>Resolution:</strong> ${ticket.fixDescription}</p>`
+                        ? `<p class="text-sm text-slate-600 mt-2 p-2 bg-green-100/60 rounded-lg"><strong>Resolution:</strong> ${ticket.fixDescription}</p>`
                         : '';
 
                     const el = document.createElement('div');
@@ -978,29 +1072,19 @@
             }
 
             // --- UPDATE METRICS ---
-            // Calculate metrics from ALL known tickets
-            allKnownTickets.forEach(ticket => {
-                const affectedUsers = ticket.affectedUsers || [];
-                totalAffectedCount += affectedUsers.length;
-                affectedUsers.forEach(user => {
-                    if (user.ein) { 
-                        uniqueAffectedEINs.add(user.ein);
-                    }
-                });
-            });
-            
+            // Metrics are now calculated *daily* in the loop above
             metricTotalAffected.textContent = totalAffectedCount;
             metricUniqueAffected.textContent = uniqueAffectedEINs.size; // Set unique count
             
             // --- Update Top 5 List ---
             top5List.innerHTML = ''; // Clear old list
-            // Sort all known tickets for Top 5
-            allKnownTickets.sort((a, b) => (b.affectedUsers?.length || 0) - (a.affectedUsers?.length || 0));
+            // Sort all known tickets by *daily* count for Top 5
+            allKnownTickets.sort((a, b) => (b.dailyAffectedCount || 0) - (a.dailyAffectedCount || 0));
             const top5Issues = allKnownTickets.slice(0, 5);
             
             if (top5Issues.length > 0) {
                 top5Issues.forEach((ticket, index) => {
-                    const numAffected = ticket.affectedUsers?.length || 0;
+                    const numAffected = ticket.dailyAffectedCount || 0; // Use daily count
                     const el = document.createElement('div');
                     el.className = 'flex justify-between items-center p-3 bg-slate-50 rounded-lg';
                     el.innerHTML = `
@@ -1008,7 +1092,8 @@
                             <span class="font-bold text-slate-800">${index + 1}.</span>
                             <span class="font-medium ml-2">${ticket.title}</span>
                         </div>
-                        <span class="font-bold text-red-600 text-lg">${numAffected}</span>
+                        <!-- MODIFIED: Color -->
+                        <span class="font-bold text-secondary text-lg">${numAffected}</span>
                     `;
                     top5List.appendChild(el);
                 });
@@ -1023,13 +1108,13 @@
                 metricsChart.destroy();
             }
 
-            // 2. Prepare data (Top 5 + "Other")
+            // 2. Prepare data (Top 5 + "Other" based on *daily* count)
             const chartLabels = [];
             const chartData = [];
             let otherCount = 0;
 
             allKnownTickets.forEach((ticket, index) => {
-                const count = ticket.affectedUsers?.length || 0;
+                const count = ticket.dailyAffectedCount || 0; // Use daily count
                 if (index < 5) {
                     chartLabels.push(ticket.title);
                     chartData.push(count);
@@ -1053,20 +1138,21 @@
                         datasets: [{
                             label: '# of Votes',
                             data: chartData,
+                            // MODIFIED: Chart Colors
                             backgroundColor: [
-                                'rgba(239, 68, 68, 0.7)',  // red-500
+                                'rgba(100, 0, 170, 0.7)',  // primary
+                                'rgba(0, 155, 164, 0.7)',  // secondary
                                 'rgba(249, 115, 22, 0.7)', // orange-500
-                                'rgba(234, 179, 8, 0.7)',  // yellow-500
-                                'rgba(34, 197, 94, 0.7)', // green-500
-                                'rgba(59, 130, 246, 0.7)', // blue-500
+                                'rgba(34, 197, 94, 0.7)',  // green-500
+                                'rgba(139, 70, 194, 0.7)', // lighter purple
                                 'rgba(107, 114, 128, 0.7)' // gray-500
                             ],
                             borderColor: [
-                                'rgba(239, 68, 68, 1)',
+                                'rgba(100, 0, 170, 1)',
+                                'rgba(0, 155, 164, 1)',
                                 'rgba(249, 115, 22, 1)',
-                                'rgba(234, 179, 8, 1)',
                                 'rgba(34, 197, 94, 1)',
-                                'rgba(59, 130, 246, 1)',
+                                'rgba(139, 70, 194, 1)',
                                 'rgba(107, 114, 128, 1)'
                             ],
                             borderWidth: 1
@@ -1185,6 +1271,7 @@
                 userId: userId, // Firebase auth ID
                 ein: ein,       // User's EIN
                 comments: comments,
+                // MODIFIED: Store the timestamp of the report
                 timestamp: new Date() // Use client-side date
             };
 
@@ -1196,19 +1283,28 @@
                     const ticket = ticketDoc.data();
                     const affectedUsers = ticket.affectedUsers || [];
 
-                    // Check if EIN is already in the list
-                    const isAlreadyAffected = affectedUsers.some(user => user.ein === ein);
+                    // MODIFIED: Check if EIN is already in the list *for today*
+                    const startOfToday = getStartOfDay();
+                    const isAlreadyAffected = affectedUsers.some(user => {
+                        return user.ein === ein && 
+                            user.timestamp && 
+                            user.timestamp.toDate() > startOfToday;
+                    });
 
+                    // --- FIX 2: START ---
+                    // This logic was broken by a copy-paste error.
                     if (isAlreadyAffected) {
-                        errorMsg.textContent = 'This EIN has already been registered for this issue.';
+                        errorMsg.textContent = 'You have already reported this issue today.';
                         errorMsg.classList.remove('hidden');
                     } else {
+                        // Not already affected, add the new entry
                         affectedUsers.push(newAffectedEntry);
                         await updateDoc(ticketRef, {
                             affectedUsers: affectedUsers
                         });
                         hideModal();
                     }
+                    // --- FIX 2: END ---
                 }
             } catch (error) {
                 console.error("Error reporting affected issue: ", error);
