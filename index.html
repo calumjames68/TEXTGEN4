@@ -993,8 +993,7 @@
                 
                 await setDoc(userRef, dataToSet, { merge: true });
                 
-            } catch (error)
-                {
+            } catch (error) { // <-- FIXED: This was a malformed catch block
                 console.error("Failed to create/update user document: ", error);
             }
             // --- End User Document ---
