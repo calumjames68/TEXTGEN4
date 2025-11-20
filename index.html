@@ -6,7 +6,7 @@
     <title>Bug Board</title>
     <!-- 1. Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 2. Configure Tailwind for Inter font AND BT/EE Colors -->
+    <!-- 2. Configure Tailwind -->
     <script>
         tailwind.config = {
             theme: {
@@ -15,1792 +15,1113 @@
                         sans: ['Inter', 'sans-serif'],
                     },
                     colors: {
-                        // BT/EE Palette
                         'primary': '#6400aa',   // BT Purple
+                        'primary-dark': '#4b0080',
                         'secondary': '#009ba4', // EE Teal
+                        'secondary-dark': '#007c83',
+                    },
+                    animation: {
+                        'fade-in-up': 'fadeInUp 0.5s ease-out',
+                        'bounce-short': 'bounceShort 1s infinite'
+                    },
+                    keyframes: {
+                        fadeInUp: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        },
+                        bounceShort: {
+                            '0%, 100%': { transform: 'translateY(-5%)', animationTimingFunction: 'cubic-bezier(0.8, 0, 1, 1)' },
+                            '50%': { transform: 'translateY(0)', animationTimingFunction: 'cubic-bezier(0, 0, 0.2, 1)' },
+                        }
                     }
                 },
             },
         };
     </script>
     <!-- 3. Load Google Font -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- 4. Load Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
-        /* Simple modal styles */
-        .modal {
-            transition: opacity 0.25s ease;
-        }
-        .modal-content {
-            transition: transform 0.25s ease;
-        }
+        body { font-family: 'Inter', sans-serif; }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        .modal { transition: opacity 0.2s ease, visibility 0.2s; visibility: hidden; opacity: 0; }
+        .modal.active { visibility: visible; opacity: 1; }
+        .modal-content { transform: scale(0.95); transition: transform 0.2s ease; }
+        .modal.active .modal-content { transform: scale(1); }
 
-        /* Sidebar transition styles */
-        #sidebar {
-            transition: transform 0.3s ease-in-out;
-        }
-        #sidebar-overlay {
-            transition: opacity 0.3s ease-in-out;
-        }
+        /* Toast Notifications */
+        #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 100; display: flex; flex-direction: column; gap: 10px; }
+        .toast { min-width: 300px; padding: 16px; border-radius: 8px; background: white; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border-left: 4px solid; animation: slideIn 0.3s ease-out forwards; display: flex; align-items: center; justify-content: space-between; }
+        .toast.success { border-left-color: #10b981; }
+        .toast.error { border-left-color: #ef4444; }
+        .toast.info { border-left-color: #3b82f6; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
     </style>
 </head>
-<body class="font-sans bg-white text-slate-800 min-h-screen">
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
     
-    <!-- ADDED: App Loader Screen -->
-    <div id="app-loader" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white hidden">
-        <div class="text-center">
-            <!-- MODIFIED: Color -->
-            <svg class="animate-spin h-8 w-8 text-primary mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <h3 class="text-xl font-semibold text-slate-700">Loading Bug Board...</h3>
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <!-- App Loader -->
+    <div id="app-loader" class="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-white transition-opacity duration-500">
+        <div class="relative w-20 h-20 mb-4">
+            <div class="absolute inset-0 border-4 border-slate-100 rounded-full"></div>
+            <div class="absolute inset-0 border-4 border-primary rounded-full border-t-transparent animate-spin"></div>
         </div>
+        <h3 class="text-xl font-semibold text-slate-700 tracking-tight">Loading Bug Board...</h3>
     </div>
 
     <!-- Sidebar -->
-    <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 opacity-0 pointer-events-none"></div>
-    <div id="sidebar" class="fixed top-0 left-0 w-64 h-full bg-white shadow-lg z-40 transform -translate-x-full flex flex-col">
-        <div class="p-5 flex-grow">
-            <!-- MODIFIED: Color -->
-            <h2 class="text-2xl font-semibold text-primary mb-6">Bug Board</h2>
-            <nav class="space-y-2">
-                <button data-page="submit" class="nav-link w-full text-left p-3 rounded-lg font-medium text-slate-700 hover:bg-slate-100">Submit New Issue</button>
-                <button data-page="pending" class="nav-link w-full text-left p-3 rounded-lg font-medium text-slate-700 hover:bg-slate-100">Pending Issues</button>
-                <button data-page="known" class="nav-link w-full text-left p-3 rounded-lg font-medium text-slate-700 hover:bg-slate-100">Known Issues</button>
-                <button data-page="completed" class="nav-link w-full text-left p-3 rounded-lg font-medium text-slate-700 hover:bg-slate-100">Completed Issues</button>
-                <button data-page="metrics" class="nav-link w-full text-left p-3 rounded-lg font-medium text-slate-700 hover:bg-slate-100">Metrics</button>
-            </nav>
+    <div id="sidebar-overlay" class="fixed inset-0 bg-slate-900/50 z-30 opacity-0 pointer-events-none transition-opacity duration-300"></div>
+    <aside id="sidebar" class="fixed top-0 left-0 w-72 h-full bg-white shadow-2xl z-40 transform -translate-x-full transition-transform duration-300 flex flex-col">
+        <div class="p-6 border-b border-slate-100">
+            <h2 class="text-2xl font-bold text-primary flex items-center gap-2">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                Bug Board
+            </h2>
+            <p class="text-xs text-slate-400 mt-1">Operational Issue Tracker</p>
         </div>
-        <!-- Log Out Button -->
-        <div class="p-5 border-t border-slate-200">
-            <button id="logout-btn" class="w-full text-left p-3 rounded-lg font-medium text-slate-500 hover:bg-red-50 hover:text-red-600">
-                Log Out / Switch Role
+        <nav class="flex-grow p-4 space-y-1 overflow-y-auto">
+            <button data-page="submit" class="nav-link w-full text-left p-3 rounded-lg font-medium text-slate-600 hover:bg-slate-50 hover:text-primary flex items-center gap-3 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                Submit New Issue
+            </button>
+            <button data-page="pending" class="nav-link w-full text-left p-3 rounded-lg font-medium text-slate-600 hover:bg-slate-50 hover:text-primary flex items-center gap-3 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                Pending Approvals
+            </button>
+            <button data-page="known" class="nav-link w-full text-left p-3 rounded-lg font-medium text-slate-600 hover:bg-slate-50 hover:text-primary flex items-center gap-3 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                Known Issues
+            </button>
+            <button data-page="completed" class="nav-link w-full text-left p-3 rounded-lg font-medium text-slate-600 hover:bg-slate-50 hover:text-primary flex items-center gap-3 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                Fixed Issues
+            </button>
+            <button data-page="metrics" class="nav-link w-full text-left p-3 rounded-lg font-medium text-slate-600 hover:bg-slate-50 hover:text-primary flex items-center gap-3 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                Metrics
+            </button>
+        </nav>
+        <div class="p-4 border-t border-slate-100 bg-slate-50">
+            <button id="logout-btn" class="w-full flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-red-600 transition-colors p-2 rounded-lg hover:bg-red-50">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                Log Out
             </button>
         </div>
-    </div>
+    </aside>
 
-    <!-- App Wrapper -->
-    <div class="flex flex-col min-h-screen">
-        
+    <!-- Main Content -->
+    <div class="flex-grow flex flex-col transition-all duration-300">
         <!-- Header -->
-        <header class="sticky top-0 bg-white shadow-md z-20">
+        <header class="sticky top-0 bg-white/80 backdrop-blur-md border-b border-slate-200 z-20">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex justify-between items-center h-16">
-                    <!-- Left: Hamburger Menu -->
-                    <div class="flex items-center">
-                        <button id="hamburger-btn" class="p-2 text-slate-600 hover:text-slate-900">
-                            <!-- Hamburger Icon SVG -->
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
-                            </svg>
+                    <div class="flex items-center gap-4">
+                        <button id="hamburger-btn" class="p-2 text-slate-600 hover:text-primary rounded-md hover:bg-slate-100 transition-colors">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
                         </button>
-                        <!-- MODIFIED: Color -->
-                        <h1 id="header-title" class="text-2xl font-bold text-primary ml-4">Submit New Issue</h1>
+                        <h1 id="header-title" class="text-xl font-bold text-slate-800">Dashboard</h1>
                     </div>
-                    <!-- Right: User Name & Logout -->
-                    <div class="flex items-center space-x-4">
-                        <div class="text-sm">
-                            <!-- MODIFIED: "EIN" to "Name" -->
-                            User Name: <strong id="user-name-display" class="text-slate-900">Loading...</strong>
+                    <div class="flex items-center gap-4">
+                        <div class="text-right hidden sm:block">
+                            <div class="text-xs text-slate-400 uppercase font-semibold tracking-wider" id="user-role-display">Role</div>
+                            <div class="text-sm font-medium text-slate-700" id="user-name-display">Loading...</div>
                         </div>
-                        <!-- Logout Button -->
-                        <button id="header-logout-btn" class="p-2 text-slate-500 hover:text-red-600" title="Log Out / Switch Role">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-                        </button>
+                        <div class="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold" id="user-avatar">
+                            U
+                        </div>
                     </div>
                 </div>
             </div>
         </header>
 
-        <!-- Main Content Area -->
-        <main class="flex-grow p-4 md:p-8 bg-slate-100"> <!-- MODIFIED: Body background to main -->
-            <div class="max-w-7xl mx-auto">
-
-                <!-- Page 1: Submit Ticket (TL View) -->
-                <div id="page-submit" class="page-content">
-                    <section class="max-w-xl mx-auto bg-white p-6 rounded-lg shadow-md">
-                        <form id="new-ticket-form">
-                            <div class="mb-4">
-                                <label for="ticket-title" class="block text-sm font-medium text-slate-700 mb-1">Issue Title</label>
-                                <!-- MODIFIED: Color -->
-                                <input type="text" id="ticket-title" placeholder="e.g., 'Login button not working'" class="w-full p-2 border border-slate-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary" required>
-                            </div>
-                            <div class="mb-4">
-                                <label for="ticket-desc" class="block text-sm font-medium text-slate-700 mb-1">Description</label>
-                                <!-- MODIFIED: Color -->
-                                <textarea id="ticket-desc" rows="4" placeholder="Describe the issue in detail..." class="w-full p-2 border border-slate-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary" required></textarea>
-                            </div>
-                            <!-- MODIFIED: "EIN" to "Name" -->
-                            <div class="mb-4">
-                                <label for="ticket-name" class="block text-sm font-medium text-slate-700 mb-1">Your Name</label>
-                                <input type="text" id="ticket-name" class="w-full p-2 border border-slate-300 rounded-lg shadow-sm bg-slate-100" readonly required>
-                            </div>
-                            
-                            <!-- REMOVED: Unique Code field -->
-                            
-                            <!-- MODIFIED: Color & Reset ID -->
-                            <button type="submit" class="w-full bg-primary text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-primary/90 transition duration-150">
-                                Submit Issue
-                            </button>
-                        </form>
-                    </section>
+        <!-- Page Content -->
+        <main class="flex-grow p-4 md:p-8 max-w-7xl mx-auto w-full">
+            
+            <!-- Search Bar (Visible on Known/Fixed/Pending) -->
+            <div id="global-search-container" class="hidden mb-6">
+                <div class="relative max-w-md mx-auto md:mx-0 md:w-96">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    </div>
+                    <input type="text" id="global-search-input" class="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-full leading-5 bg-white placeholder-slate-400 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary sm:text-sm transition duration-150 ease-in-out" placeholder="Search issues...">
                 </div>
+            </div>
 
-                <!-- Page 2: New Issues (Admin View) -->
-                <div id="page-pending" class="page-content hidden">
-                    <section class="bg-white p-6 rounded-lg shadow-md">
-                        <p class="text-sm text-slate-500 mb-4">Approve pending issues to make them "Known".</p>
-                        <div id="new-tickets-list" class="space-y-4">
-                            <!-- New tickets will be injected here by JS -->
-                            <p class="text-slate-400">No new issues...</p>
+            <!-- Page: Submit -->
+            <div id="page-submit" class="page-content hidden animate-fade-in-up">
+                <div class="max-w-2xl mx-auto bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="text-center mb-8">
+                        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 text-primary mb-4">
+                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                         </div>
+                        <h2 class="text-2xl font-bold text-slate-800">Report a New Issue</h2>
+                        <p class="text-slate-500 mt-1">Found a bug? Let the TL team know.</p>
+                    </div>
+
+                    <form id="new-ticket-form" class="space-y-6">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-2">Issue Title</label>
+                            <input type="text" id="ticket-title" placeholder="Brief summary of the problem" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-2">Description</label>
+                            <textarea id="ticket-desc" rows="4" placeholder="Detailed description including steps to reproduce..." class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition" required></textarea>
+                        </div>
+                        <button type="submit" class="w-full bg-primary text-white font-semibold py-3 px-4 rounded-lg shadow hover:bg-primary-dark active:scale-[0.98] transition-all duration-150">
+                            Submit Issue
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Page: Pending -->
+            <div id="page-pending" class="page-content hidden animate-fade-in-up">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="flex justify-between items-end mb-6">
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-800">Pending Approval</h2>
+                            <p class="text-sm text-slate-500">Review new submissions from Guides.</p>
+                        </div>
+                    </div>
+                    <div id="new-tickets-list" class="space-y-4"></div>
+                </div>
+            </div>
+
+            <!-- Page: Known Issues -->
+            <div id="page-known" class="page-content hidden animate-fade-in-up">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Persistent -->
+                    <section class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
+                        <div class="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
+                            <div class="p-2 bg-red-100 text-red-600 rounded-lg">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                            </div>
+                            <div>
+                                <h2 class="text-lg font-bold text-slate-800">Persistent Issues</h2>
+                                <p class="text-xs text-slate-500">Ongoing known outages</p>
+                            </div>
+                        </div>
+                        <div id="persistent-issues-list" class="space-y-4 flex-grow"></div>
+                    </section>
+
+                    <!-- New & Important -->
+                    <section class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
+                        <div class="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
+                            <div class="p-2 bg-secondary/20 text-secondary rounded-lg">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"></path></svg>
+                            </div>
+                            <div>
+                                <h2 class="text-lg font-bold text-slate-800">New & Important</h2>
+                                <p class="text-xs text-slate-500">Recently reported issues</p>
+                            </div>
+                        </div>
+                        <div id="new-issues-list" class="space-y-4 flex-grow"></div>
                     </section>
                 </div>
+            </div>
 
-                <!-- Page 3: Known Issues (Guide View) -->
-                <div id="page-known" class="page-content hidden">
-                    <!-- MODIFIED: 2-column layout -->
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        
-                        <!-- Column 1: Persistent Issues -->
-                        <section class="bg-white p-6 rounded-lg shadow-md">
-                            <h2 class="text-xl font-semibold text-primary mb-4">Persistent Issues</h2>
-                            <p class="text-sm text-slate-500 mb-4">Ongoing operational issues. Report if you are affected daily.</p>
-                            <div id="persistent-issues-list" class="space-y-4">
-                                <p class="text-slate-400">No persistent issues...</p>
-                            </div>
-                        </section>
+            <!-- Page: Fixed -->
+            <div id="page-completed" class="page-content hidden animate-fade-in-up">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-800">Fixed Issues</h2>
+                            <p class="text-sm text-slate-500">Archive of resolved tickets.</p>
+                        </div>
+                        <button id="download-completed-btn" class="text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-2 px-4 rounded-lg transition flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                            Export CSV
+                        </button>
+                    </div>
+                    <div id="completed-tickets-list" class="space-y-4"></div>
+                </div>
+            </div>
 
-                        <!-- Column 2: New & Important Issues -->
-                        <section class="bg-white p-6 rounded-lg shadow-md">
-                            <!-- MODIFIED: Color -->
-                            <h2 class="text-xl font-semibold text-secondary mb-4">New & Important Issues</h2>
-                            <p class="text-sm text-slate-500 mb-4">Approved, non-permanent issues. Report if you are affected.</p>
-                            <div id="new-issues-list" class="space-y-4">
-                                <p class="text-slate-400">No new issues...</p>
+            <!-- Page: Metrics -->
+            <div id="page-metrics" class="page-content hidden animate-fade-in-up">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-lg font-bold text-slate-800">Daily Metrics</h2>
+                        <button id="download-metrics-btn" class="text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-2 px-4 rounded-lg transition flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                            Export CSV
+                        </button>
+                    </div>
+
+                    <!-- Stats Cards -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+                        <div class="p-6 bg-gradient-to-br from-primary/5 to-primary/20 rounded-xl border border-primary/10">
+                            <div class="text-sm font-medium text-primary mb-1">Total Affected Reports (Today)</div>
+                            <div id="metric-total-affected" class="text-4xl font-bold text-primary tracking-tight">0</div>
+                        </div>
+                        <div class="p-6 bg-gradient-to-br from-secondary/5 to-secondary/20 rounded-xl border border-secondary/10">
+                            <div class="text-sm font-medium text-secondary mb-1">Unique Affected Agents (Today)</div>
+                            <div id="metric-unique-affected" class="text-4xl font-bold text-secondary tracking-tight">0</div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div>
+                            <h3 class="text-md font-semibold mb-4 text-slate-700 uppercase tracking-wider text-xs">Top 5 Issues</h3>
+                            <div id="top-5-list" class="space-y-3"></div>
+                        </div>
+                        <div class="flex flex-col items-center justify-center">
+                            <h3 class="text-md font-semibold mb-4 text-slate-700 uppercase tracking-wider text-xs">Distribution</h3>
+                            <div class="relative w-full max-w-xs aspect-square">
+                                <canvas id="metrics-pie-chart"></canvas>
                             </div>
-                        </section>
+                        </div>
                     </div>
                 </div>
-
-                <!-- Page 4: Completed Issues (Archive) -->
-                <div id="page-completed" class="page-content hidden">
-                    <section class="bg-white p-6 rounded-lg shadow-md">
-                        <div class="flex justify-between items-center mb-4">
-                            <p class="text-sm text-slate-500">Resolved issues are stored here.</p>
-                            <!-- ADDED: Download Button -->
-                            <!-- MODIFIED: Color -->
-                            <button id="download-completed-btn" class="bg-secondary text-white font-semibold py-2 px-4 rounded-lg hover:bg-secondary/90 transition text-sm">
-                                Download Report (CSV)
-                            </button>
-                        </div>
-                        <div id="completed-tickets-list" class="space-y-4">
-                            <!-- Completed tickets will be injected here by JS -->
-                            <p class="text-slate-400">No completed issues...</p>
-                        </div>
-                    </section>
-                </div>
-
-                <!-- Page 5: Metrics Section -->
-                <div id="page-metrics" class="page-content hidden">
-                    <section class="bg-white p-6 rounded-lg shadow-md">
-                        <!-- ADDED: Download Button Wrapper -->
-                        <div class="flex justify-end mb-4">
-                            <!-- MODIFIED: Color -->
-                            <button id="download-metrics-btn" class="bg-secondary text-white font-semibold py-2 px-4 rounded-lg hover:bg-secondary/90 transition text-sm">
-                                Download Report (CSV)
-                            </button>
-                        </div>
-                        <!-- Top row: Summary boxes -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-                            <!-- Metric Display 1 -->
-                            <!-- MODIFIED: Color -->
-                            <div class="p-4 bg-primary/10 rounded-lg">
-                                <div class="text-sm text-primary/80">Total "Affected" Reports (Today)</div>
-                                <div id="metric-total-affected" class="text-3xl font-bold text-primary">0</div>
-                            </div>
-                            <!-- Metric Display 2 -->
-                            <!-- MODIFIED: Color -->
-                            <div class="p-4 bg-secondary/10 rounded-lg">
-                                <!-- MODIFIED: "Guides" to "Users" -->
-                                <div class="text-sm text-secondary/80">Unique Affected Users (Today)</div>
-                                <div id="metric-unique-affected" class="text-3xl font-bold text-secondary">0</div>
-                            </div>
-                        </div>
-
-                        <!-- Bottom row: Top 5 List and Chart -->
-                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                            <!-- Column 1: Top 5 List -->
-                            <div>
-                                <h3 class="text-xl font-semibold mb-4 text-slate-800">Top 5 Most Affected Issues (Today)</h3>
-                                <div id="top-5-list" class="space-y-3">
-                                    <!-- JS will populate this -->
-                                    <p class="text-slate-400">No issues to display...</p>
-                                </div>
-                            </div>
-                            <!-- Column 2: Chart -->
-                            <div>
-                                <h3 class="text-xl font-semibold mb-4 text-slate-800">Issue Vote Distribution (Today)</h3>
-                                <div class="relative w-full max-w-md mx-auto">
-                                    <canvas id="metrics-pie-chart"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-                </div>
-
             </div>
         </main>
     </div>
 
-    <!-- "I've been affected" Modal -->
-    <div id="affected-modal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 opacity-0 pointer-events-none">
-        <div class="modal-content bg-white w-full max-w-md p-6 rounded-lg shadow-xl transform scale-95">
-            <h3 class="text-xl font-semibold mb-4">Report Affected Issue</h3>
-            <form id="affected-form">
+    <!-- MODALS -->
+    
+    <!-- Modal Backdrop -->
+    <div id="modal-backdrop" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden transition-opacity duration-300 opacity-0"></div>
+
+    <!-- Common Modal Container -->
+    <div id="modal-container" class="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+        
+        <!-- Affected Report Modal -->
+        <div id="affected-modal" class="modal bg-white w-full max-w-md p-0 rounded-2xl shadow-2xl pointer-events-auto flex flex-col max-h-[90vh]">
+            <div class="p-6 border-b border-slate-100">
+                <h3 class="text-xl font-bold text-slate-800">Report Impact</h3>
+                <p class="text-sm text-slate-500">Let us know you are affected by this issue.</p>
+            </div>
+            <form id="affected-form" class="p-6 overflow-y-auto">
                 <input type="hidden" id="affected-ticket-id">
-                <!-- New Error Message Div -->
-                <div id="modal-error-msg" class="text-red-600 text-sm mb-3 hidden"></div>
-                <!-- MODIFIED: "EIN" to "Name" -->
                 <div class="mb-4">
-                    <label for="affected-name" class="block text-sm font-medium text-slate-700 mb-1">Your Name</label>
-                    <input type="text" id="affected-name" class="w-full p-2 border border-slate-300 rounded-lg shadow-sm bg-slate-100" readonly required>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Your Name</label>
+                    <input type="text" id="affected-name" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-600 cursor-not-allowed" readonly>
                 </div>
-                <div class="mb-4">
-                    <label for="affected-comments" class="block text-sm font-medium text-slate-700 mb-1">Comments (Optional)</label>
-                    <textarea id="affected-comments" rows="3" placeholder="Any additional details..." class="w-full p-2 border border-slate-300 rounded-lg shadow-sm"></textarea>
+                <div class="mb-6">
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Additional Comments (Optional)</label>
+                    <textarea id="affected-comments" rows="3" placeholder="Specific errors, workstation ID, etc." class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-secondary focus:border-secondary outline-none"></textarea>
                 </div>
                 <div class="flex justify-end gap-3">
-                    <button type="button" id="modal-cancel-btn" class="bg-slate-200 text-slate-800 font-semibold py-2 px-4 rounded-lg hover:bg-slate-300 transition">
-                        Cancel
-                    </button>
-                    <!-- MODIFIED: Color -->
-                    <button type="submit" class="bg-secondary text-white font-semibold py-2 px-4 rounded-lg hover:bg-secondary/90 transition">
-                        Submit Report
-                    </button>
+                    <button type="button" class="modal-close-btn px-4 py-2 text-slate-600 font-medium hover:bg-slate-100 rounded-lg transition">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-secondary text-white font-medium rounded-lg hover:bg-secondary-dark shadow-sm transition">Submit Report</button>
                 </div>
             </form>
         </div>
-    </div>
-    
-    <!-- NEW: "Complete Issue" Modal -->
-    <div id="complete-modal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 opacity-0 pointer-events-none">
-        <div class="modal-content bg-white w-full max-w-md p-6 rounded-lg shadow-xl transform scale-95">
-            <h3 class="text-xl font-semibold mb-4">Complete Issue</h3>
-            <form id="complete-form">
+
+        <!-- Complete Issue Modal -->
+        <div id="complete-modal" class="modal bg-white w-full max-w-md p-0 rounded-2xl shadow-2xl pointer-events-auto flex flex-col max-h-[90vh]">
+            <div class="p-6 border-b border-slate-100">
+                <h3 class="text-xl font-bold text-slate-800">Resolve Issue</h3>
+                <p class="text-sm text-slate-500">Mark this issue as fixed and archive it.</p>
+            </div>
+            <form id="complete-form" class="p-6 overflow-y-auto">
                 <input type="hidden" id="complete-ticket-id">
-                <div id="complete-modal-error-msg" class="text-red-600 text-sm mb-3 hidden"></div>
-                <div class="mb-4">
-                    <label for="complete-description" class="block text-sm font-medium text-slate-700 mb-1">Resolution Details</label>
-                    <!-- MODIFIED: Color -->
-                    <textarea id="complete-description" rows="3" placeholder="Describe the fix or resolution..." class="w-full p-2 border border-slate-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary" required></textarea>
+                <div class="mb-6">
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Resolution Details</label>
+                    <textarea id="complete-description" rows="4" placeholder="What was the fix? e.g., 'Rolled back update', 'Server restart'..." class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none" required></textarea>
                 </div>
                 <div class="flex justify-end gap-3">
-                    <button type="button" id="complete-modal-cancel-btn" class="bg-slate-200 text-slate-800 font-semibold py-2 px-4 rounded-lg hover:bg-slate-300 transition">
-                        Cancel
-                    </button>
-                    <!-- MODIFIED: Color -->
-                    <button type="submit" class="bg-primary text-white font-semibold py-2 px-4 rounded-lg hover:bg-primary/90 transition">
-                        Mark as Complete
-                    </button>
+                    <button type="button" class="modal-close-btn px-4 py-2 text-slate-600 font-medium hover:bg-slate-100 rounded-lg transition">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-primary text-white font-medium rounded-lg hover:bg-primary-dark shadow-sm transition">Mark Resolved</button>
                 </div>
             </form>
         </div>
+
+        <!-- Affected List Modal -->
+        <div id="affected-guides-modal" class="modal bg-white w-full max-w-lg p-0 rounded-2xl shadow-2xl pointer-events-auto flex flex-col max-h-[80vh]">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-800">Impacted Users</h3>
+                    <p class="text-xs text-slate-500">Reports from the last 24 hours</p>
+                </div>
+                <button type="button" class="modal-close-btn text-slate-400 hover:text-slate-600 bg-slate-50 p-2 rounded-full">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div id="affected-guides-list" class="p-6 overflow-y-auto space-y-2 flex-grow bg-slate-50/50"></div>
+        </div>
+
     </div>
-    
-    <!-- MODIFIED: Role Login Modal (Re-designed with Tabs) -->
-    <div id="login-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-100">
-        <div class="bg-white w-full max-w-sm p-8 rounded-lg shadow-xl">
-            <!-- MODIFIED: Color -->
-            <h3 class="text-2xl font-semibold mb-6 text-center text-primary">Welcome to Bug Board</h3>
 
-            <!-- Tab Buttons -->
-            <div class="grid grid-cols-2 gap-2 mb-6">
-                <button id="guide-tab-btn" class="w-full py-2 px-4 rounded-lg font-semibold text-sm transition bg-primary text-white">
-                    Guide Login
-                </button>
-                <button id="tl-tab-btn" class="w-full py-2 px-4 rounded-lg font-semibold text-sm transition bg-slate-200 text-slate-700 hover:bg-slate-300">
-                    TL Login
-                </button>
+    <!-- Login Modal -->
+    <div id="login-modal" class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-100 hidden">
+        <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden">
+            <div class="p-8 bg-slate-900 text-white text-center relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-primary to-secondary opacity-50"></div>
+                <div class="relative z-10">
+                    <h3 class="text-2xl font-bold mb-1">Welcome</h3>
+                    <p class="text-slate-200 text-sm">Sign in to Bug Board</p>
+                </div>
             </div>
+            
+            <div class="p-8">
+                <!-- Tabs -->
+                <div class="flex bg-slate-100 p-1 rounded-xl mb-6">
+                    <button id="guide-tab-btn" class="flex-1 py-2 text-sm font-medium rounded-lg transition-all shadow-sm bg-white text-primary">Guide</button>
+                    <button id="tl-tab-btn" class="flex-1 py-2 text-sm font-medium rounded-lg text-slate-500 hover:text-slate-700 transition-all">Team Leader</button>
+                </div>
 
-            <!-- Login Error Message (Shared) -->
-            <div id="login-error-msg" class="text-red-600 text-sm pb-4 pt-1 hidden"></div>
-
-            <!-- Guide Login Panel -->
-            <div id="guide-login-panel">
-                <form id="guide-login-form" class="space-y-4">
+                <!-- Guide Form -->
+                <form id="guide-login-form" class="space-y-4 animate-fade-in-up">
                     <div>
-                        <label for="name-input" class="block text-sm font-medium text-slate-700 mb-2">Your Name</label>
-                        <input type="text" id="name-input" placeholder="e.g., Calum Barnes" class="w-full p-3 border border-slate-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary" required>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Name</label>
+                        <input type="text" id="name-input" placeholder="e.g. Jane Doe" class="w-full p-3 border border-slate-200 rounded-lg focus:border-secondary focus:ring-1 focus:ring-secondary outline-none" required>
                     </div>
                     <div>
-                        <label for="ein-input" class="block text-sm font-medium text-slate-700 mb-2">Your EIN</label>
-                        <input type="text" id="ein-input" placeholder="e.g., 123456" class="w-full p-3 border border-slate-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary" required>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">EIN</label>
+                        <input type="text" id="ein-input" placeholder="e.g. 123456" class="w-full p-3 border border-slate-200 rounded-lg focus:border-secondary focus:ring-1 focus:ring-secondary outline-none" required>
                     </div>
-                    <button type="submit" id="guide-login-btn" class="w-full bg-primary text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:bg-primary/90 transition duration-150 mt-4">
-                        Login as Guide
+                    <button type="submit" id="guide-login-btn" class="w-full py-3 bg-secondary text-white font-bold rounded-lg hover:bg-secondary-dark transition shadow-lg shadow-secondary/30 mt-2">
+                        Login
+                    </button>
+                </form>
+
+                <!-- TL Form -->
+                <form id="tl-login-form" class="space-y-4 hidden animate-fade-in-up">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Access Code</label>
+                        <input type="password" id="tl-code-input" placeholder="••••••••" class="w-full p-3 border border-slate-200 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary outline-none" required>
+                    </div>
+                    <button type="submit" id="tl-login-btn" class="w-full py-3 bg-primary text-white font-bold rounded-lg hover:bg-primary-dark transition shadow-lg shadow-primary/30 mt-2">
+                        Verify Access
                     </button>
                 </form>
             </div>
-
-            <!-- TL Login Panel (Hidden by default) -->
-            <div id="tl-login-panel" class="hidden">
-                <form id="tl-login-form" class="space-y-4">
-                    <div>
-                        <label for="tl-code-input" class="block text-sm font-medium text-slate-700 mb-2">Unique Code</label>
-                        <input type="password" id="tl-code-input" placeholder="Enter your TL Code" class="w-full p-3 border border-slate-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary" required>
-                    </div>
-                    <button type="submit" id="tl-login-btn" class="w-full bg-primary text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:bg-primary/90 transition duration-150 mt-4">
-                        Login as TL
-                    </button>
-                </form>
-            </div>
-
         </div>
     </div>
 
-    <!-- 5. Firebase SDKs -->
+    <!-- SCRIPTS -->
     <script type="module">
-        // Import Firebase modules
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { 
-            getAuth, 
-            signInAnonymously, 
-            onAuthStateChanged,
-            signOut // --- ADDED THIS ---
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { 
-            getFirestore, 
-            collection, 
-            doc,
-            getDoc,
-            addDoc, 
-            setDoc, 
-            updateDoc, 
-            onSnapshot, 
-            serverTimestamp,
-            query,
-            setLogLevel,
-            where,
-            getDocs
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, getDoc, addDoc, setDoc, updateDoc, onSnapshot, serverTimestamp, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- GLOBAL VARIABLES ---
-        let db, auth;
-        let userId = null; // Firebase anonymous auth ID
-        let userName = null;  // MODIFIED: User's saved Name
-        let userEIN = null; // ADDED: User's EIN
-        let userRole = null; // User's role ('guide' or 'tl')
-        let ticketsCollectionRef;
-        // const appId = typeof __app_id !== 'undefined' ? __app_id : 'bug-board-default'; // Removed for GitHub version
-        
-        // Use a simple root collection path for your own database
-        const ticketsCollectionPath = `tickets`;
-        // ADDED: New collection path for TL codes
-        const tlCodesCollectionPath = `tl_codes`;
-        // ADDED: New collection path for users
-        const usersCollectionPath = `users`;
-        
-        let globalSnapshot = null; // To store the latest data for metric re-calculation
-        let currentPage = null; // To track the visible page. Will be set by login logic.
-        let metricsChart = null; // To store the Chart.js instance
-        
-        // --- ADDED: Moved metric counters to global scope ---
-        let totalAffectedCount = 0;
-        let uniqueAffectedUsers = new Set();
-        // ---
-
-        // Page titles for header
-        const pageTitles = {
-            'submit': 'Submit New Issue',
-            'pending': 'Pending Issues',
-            'known': 'Known Issues',
-            'completed': 'Completed Issues',
-            'metrics': 'Metrics'
+        // --- CONFIGURATION ---
+        // Replace with your actual Firebase Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyBeci550NSuYHxGNctUPCEozou92w8n0Rw",
+            authDomain: "my-bug-board.firebaseapp.com",
+            projectId: "my-bug-board",
+            storageBucket: "my-bug-board.appspot.com",
+            messagingSenderId: "276540108265",
+            appId: "1:276540108265:web:7f32c71f66e34f4d582f78",
+            measurementId: "G-Y6BL20YLJW"
         };
 
-        // --- DOM Elements ---
-        const newTicketForm = document.getElementById('new-ticket-form');
+        // --- GLOBAL STATE ---
+        let app, db, auth;
+        let currentUser = { id: null, name: null, role: null, ein: null };
+        let globalSnapshot = null;
+        let metricsChart = null;
+        let currentPage = 'known';
+        let currentSearchTerm = ''; // For filtering
         
-        const newTicketsList = document.getElementById('new-tickets-list');
-        // UPDATED: Get the two new lists for Known Issues
-        const persistentIssuesList = document.getElementById('persistent-issues-list');
-        const newIssuesList = document.getElementById('new-issues-list');
-        
-        const completedTicketsList = document.getElementById('completed-tickets-list');
-        
-        // ADDED: Download Buttons
-        const downloadCompletedBtn = document.getElementById('download-completed-btn');
-        const downloadMetricsBtn = document.getElementById('download-metrics-btn');
+        // Collections
+        const COLL = { TICKETS: 'tickets', USERS: 'users', TL_CODES: 'tl_codes' };
 
-        // Metric DOM Elements
-        const metricTotalAffected = document.getElementById('metric-total-affected');
-        const metricUniqueAffected = document.getElementById('metric-unique-affected');
-        const top5List = document.getElementById('top-5-list');
-        const chartCanvas = document.getElementById('metrics-pie-chart');
-        
-        // Modal DOM Elements
-        const affectedModal = document.getElementById('affected-modal');
-        const modalCancelBtn = document.getElementById('modal-cancel-btn');
-        const affectedForm = document.getElementById('affected-form');
-        const affectedTicketIdInput = document.getElementById('affected-ticket-id');
-        const affectedNameInput = document.getElementById('affected-name'); // MODIFIED: Modal Name input
-        const affectedCommentsInput = document.getElementById('affected-comments');
+        // UI Elements
+        const els = {
+            appLoader: document.getElementById('app-loader'),
+            sidebar: document.getElementById('sidebar'),
+            sidebarOverlay: document.getElementById('sidebar-overlay'),
+            pages: document.querySelectorAll('.page-content'),
+            navLinks: document.querySelectorAll('.nav-link'),
+            headerTitle: document.getElementById('header-title'),
+            userName: document.getElementById('user-name-display'),
+            userRole: document.getElementById('user-role-display'),
+            userAvatar: document.getElementById('user-avatar'),
+            loginModal: document.getElementById('login-modal'),
+            searchInput: document.getElementById('global-search-input'),
+            searchContainer: document.getElementById('global-search-container'),
+            modalBackdrop: document.getElementById('modal-backdrop'),
+            modals: document.querySelectorAll('.modal')
+        };
 
-        // NEW Complete Modal DOM Elements
-        const completeModal = document.getElementById('complete-modal');
-        const completeForm = document.getElementById('complete-form');
-        const completeTicketIdInput = document.getElementById('complete-ticket-id');
-        const completeDescriptionInput = document.getElementById('complete-description');
-        const completeModalCancelBtn = document.getElementById('complete-modal-cancel-btn');
-        const completeModalErrorMsg = document.getElementById('complete-modal-error-msg');
-
-        // New Nav DOM Elements
-        const sidebar = document.getElementById('sidebar');
-        const sidebarOverlay = document.getElementById('sidebar-overlay');
-        const hamburgerBtn = document.getElementById('hamburger-btn');
-        const navLinks = document.querySelectorAll('.nav-link');
-        const pageContents = document.querySelectorAll('.page-content');
-        const headerTitle = document.getElementById('header-title');
-        const submitNavBtn = document.querySelector('.nav-link[data-page="submit"]');
-        const pendingNavBtn = document.querySelector('.nav-link[data-page="pending"]'); // ADDED
-        const logoutBtn = document.getElementById('logout-btn');
-        const headerLogoutBtn = document.getElementById('header-logout-btn'); // Header logout button
-
-        // MODIFIED: Login Modal DOM Elements
-        const loginModal = document.getElementById('login-modal');
-        const loginErrorMsg = document.getElementById('login-error-msg');
-        const appLoader = document.getElementById('app-loader');
-        
-        // Tab elements
-        const guideTabBtn = document.getElementById('guide-tab-btn');
-        const tlTabBtn = document.getElementById('tl-tab-btn');
-        const guideLoginPanel = document.getElementById('guide-login-panel');
-        const tlLoginPanel = document.getElementById('tl-login-panel');
-
-        // Guide Form
-        const guideLoginForm = document.getElementById('guide-login-form');
-        const nameInput = document.getElementById('name-input');
-        const einInput = document.getElementById('ein-input');
-        const guideLoginBtn = document.getElementById('guide-login-btn');
-
-        // TL Form
-        const tlLoginForm = document.getElementById('tl-login-form');
-        const tlCodeInput = document.getElementById('tl-code-input');
-        const tlLoginBtn = document.getElementById('tl-login-btn');
-        
-        // Header Display
-        const userNameDisplay = document.getElementById('user-name-display'); // MODIFIED
-        
-        // Form inputs to auto-fill
-        const ticketNameInput = document.getElementById('ticket-name'); // MODIFIED: Submit form Name input
-
-        // --- HELPER FUNCTIONS ---
-
-        /**
-         * Formats a timestamp into a relative time string (e.g., "2 hours ago")
-         */
-        function formatTimeAgo(timestamp) {
-            if (!timestamp) return '...';
-            const date = timestamp.toDate ? timestamp.toDate() : timestamp;
-            const seconds = Math.floor((new Date() - date) / 1000);
+        // --- TOAST NOTIFICATION SYSTEM ---
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
             
-            let interval = seconds / 31536000;
-            if (interval > 1) return Math.floor(interval) + " years ago";
-            interval = seconds / 2592000;
-            if (interval > 1) return Math.floor(interval) + " months ago";
-            interval = seconds / 86400;
-            if (interval > 1) return Math.floor(interval) + " days ago";
-            interval = seconds / 3600;
-            if (interval > 1) return Math.floor(interval) + " hours ago";
-            interval = seconds / 60;
-            if (interval > 1) return Math.floor(interval) + " minutes ago";
-            return "Just now";
-        }
-
-        /**
-         * Shows the "I've been affected" modal
-         */
-        function showModal(ticketId) {
-            // Clear any old error messages
-            const errorMsg = document.getElementById('modal-error-msg');
-            errorMsg.textContent = '';
-            errorMsg.classList.add('hidden');
-
-            // Auto-fill Name
-            affectedNameInput.value = userName; // MODIFIED
-
-            affectedTicketIdInput.value = ticketId;
-            affectedModal.classList.remove('opacity-0', 'pointer-events-none');
-            affectedModal.querySelector('.modal-content').classList.remove('scale-95');
-        }
-
-        /**
-         * Hides the "I've been affected" modal
-         */
-        function hideModal() {
-            affectedForm.reset();
-            // Re-fill the read-only Name field after reset
-            affectedNameInput.value = userName; // MODIFIED
-            
-            const errorMsg = document.getElementById('modal-error-msg');
-            errorMsg.textContent = '';
-            errorMsg.classList.add('hidden');
-            
-            affectedModal.classList.add('opacity-0', 'pointer-events-none');
-            affectedModal.querySelector('.modal-content').classList.add('scale-95');
-        }
-
-        /**
-         * Shows the "Complete Issue" modal
-         */
-        function showCompleteModal(ticketId) {
-            completeModalErrorMsg.textContent = '';
-            completeModalErrorMsg.classList.add('hidden');
-            completeTicketIdInput.value = ticketId;
-            completeModal.classList.remove('opacity-0', 'pointer-events-none');
-            completeModal.querySelector('.modal-content').classList.remove('scale-95');
-        }
-
-        /**
-         * Hides the "Complete Issue" modal
-         */
-        function hideCompleteModal() {
-            completeForm.reset();
-            completeModalErrorMsg.textContent = '';
-            completeModalErrorMsg.classList.add('hidden');
-            completeModal.classList.add('opacity-0', 'pointer-events-none');
-            completeModal.querySelector('.modal-content').classList.add('scale-95');
-        }
-
-        /**
-         * NEW HELPER: Gets a Date object for the start of the current day (00:00:00)
-         * in the user's local timezone.
-         */
-        function getStartOfDay() {
-            const now = new Date();
-            now.setHours(0, 0, 0, 0);
-            return now;
-        }
-
-        // --- NEW NAVIGATION FUNCTIONS ---
-
-        /**
-         * Shows the sidebar menu
-         */
-        function showSidebar() {
-            sidebar.classList.remove('-translate-x-full');
-            sidebarOverlay.classList.remove('opacity-0', 'pointer-events-none');
-            sidebarOverlay.classList.add('opacity-100', 'pointer-events-auto');
-        }
-
-        /**
-         * Hides the sidebar menu
-         */
-        function hideSidebar() {
-            sidebar.classList.add('-translate-x-full');
-            sidebarOverlay.classList.remove('opacity-100', 'pointer-events-auto');
-            sidebarOverlay.classList.add('opacity-0', 'pointer-events-none');
-        }
-
-        /**
-         * Shows the correct page content based on the currentPage global variable
-         */
-        function renderPage() {
-            // Role-based page redirect
-            if (userRole === 'guide' && currentPage === 'submit') {
-                currentPage = 'known'; // Guides can't see submit page
-            }
-            // ADDED: Redirect for pending page
-            if (userRole === 'guide' && currentPage === 'pending') {
-                currentPage = 'known'; // Guides can't see pending page
-            }
-            
-            // Auto-fill submit form Name if on that page
-            if (currentPage === 'submit') {
-                ticketNameInput.value = userName; // MODIFIED
-            }
-
-            // Hide all pages
-            pageContents.forEach(page => {
-                page.classList.add('hidden');
-            });
-            // Show the current page
-            const activePage = document.getElementById(`page-${currentPage}`);
-            if (activePage) {
-                activePage.classList.remove('hidden');
-            }
-            // Update header title
-            headerTitle.textContent = pageTitles[currentPage] || 'Bug Board';
-
-            // Highlight active nav link
-            navLinks.forEach(link => {
-                if (link.dataset.page === currentPage) {
-                    // MODIFIED: Color
-                    link.classList.add('bg-primary/10', 'text-primary');
-                } else {
-                    link.classList.remove('bg-primary/10', 'text-primary');
-                }
-            });
-        }
-
-        /**
-         * Handles clicks on the nav links in the sidebar
-         */
-        function handleNavClick(e) {
-            const page = e.target.dataset.page;
-            if (page) {
-                currentPage = page;
-                renderPage();
-                hideSidebar();
-            }
-        }
-
-        // --- NEW: Role-Based & Login Functions ---
-
-        /**
-         * Hides/Shows UI elements based on user role
-         */
-        function renderUIForRole() {
-            if (!userRole) return; // Should not happen
-
-            // Get download buttons
-            const downloadCompletedBtn = document.getElementById('download-completed-btn');
-            const downloadMetricsBtn = document.getElementById('download-metrics-btn');
-
-            if (userRole === 'guide') {
-                submitNavBtn.style.display = 'none'; // Hide "Submit Issue" link
-                if (pendingNavBtn) pendingNavBtn.style.display = 'none'; // ADDED: Hide "Pending" link
-                // ADDED: Hide download buttons for guides
-                if (downloadCompletedBtn) downloadCompletedBtn.style.display = 'none';
-                if (downloadMetricsBtn) downloadMetricsBtn.style.display = 'none';
-            } else if (userRole === 'tl') {
-                submitNavBtn.style.display = 'block'; // Ensure "Submit Issue" link is visible
-                if (pendingNavBtn) pendingNavBtn.style.display = 'block'; // ADDED: Show "Pending" link
-                // ADDED: Show download buttons for TLs
-                if (downloadCompletedBtn) downloadCompletedBtn.style.display = 'block';
-                if (downloadMetricsBtn) downloadMetricsBtn.style.display = 'block';
-            }
-        }
-
-        /**
-         * NEW: Helper function to complete the login process
-         */
-        function loginSuccess(role, name, ein = null) { // MODIFIED: Added ein
-            userRole = role;
-            userName = name; 
-            userEIN = ein; // ADDED
-
-            // Save to localStorage
-            localStorage.setItem('userRole', userRole);
-            localStorage.setItem('userName', userName);
-            localStorage.setItem('userEIN', userEIN); // ADDED
-            
-            // Set default page based on role
-            if (userRole === 'tl') {
-                currentPage = 'submit';
-            } else {
-                currentPage = 'known';
-            }
-
-            loginErrorMsg.classList.add('hidden');
-            loginModal.classList.add('hidden'); // Hide modal
-            appLoader.classList.remove('hidden'); // Show loader
-            initializeAppLogic(); // Start the main app
-        }
-
-
-        /**
-         * Handles the Guide login form submission
-         */
-        async function handleGuideLogin(e) {
-            e.preventDefault();
-            const name = nameInput.value.trim();
-            const ein = einInput.value.trim();
-
-            if (!name || !ein) {
-                loginErrorMsg.textContent = 'Please enter your Name and EIN.';
-                loginErrorMsg.classList.remove('hidden');
-                return;
-            }
-
-            // Set loading state
-            guideLoginBtn.disabled = true;
-            guideLoginBtn.textContent = 'Checking...';
-            loginErrorMsg.classList.add('hidden');
-
-            try {
-                const name_lowercase = name.toLowerCase();
-                const usersQuery = query(collection(db, usersCollectionPath), where("name_lowercase", "==", name_lowercase));
-                const querySnapshot = await getDocs(usersQuery);
-
-                if (!querySnapshot.empty) {
-                    // This name is in the database. This is a RETURNING user.
-                    const existingUserDoc = querySnapshot.docs[0];
-                    const storedRole = existingUserDoc.data().role;
-                    const storedEIN = existingUserDoc.data().ein;
-
-                    if (storedRole === 'tl') {
-                        throw new Error("This name is registered to a TL. Please use the TL Login tab.");
-                    }
-
-                    if (storedEIN !== ein) {
-                        throw new Error("This name is registered with a different EIN.");
-                    }
-
-                    // Name and EIN match. This is a re-login.
-                    loginSuccess('guide', name, ein);
-
-                } else {
-                    // No doc exists with this name. This is a NEW GUIDE.
-                    loginSuccess('guide', name, ein);
-                }
-                
-            } catch (error) {
-                console.error("Login Error: ", error);
-                loginErrorMsg.textContent = error.message;
-                loginErrorMsg.classList.remove('hidden');
-                guideLoginBtn.disabled = false;
-                guideLoginBtn.textContent = 'Login as Guide';
-            }
-        }
-
-        /**
-         * Handles the TL login form submission
-         */
-        async function handleTLLogin(e) {
-            e.preventDefault();
-            const tlCode = tlCodeInput.value.trim();
-
-            if (!tlCode) {
-                loginErrorMsg.textContent = 'Please enter your Unique Code.';
-                loginErrorMsg.classList.remove('hidden');
-                return;
-            }
-
-            // Set loading state
-            tlLoginBtn.disabled = true;
-            tlLoginBtn.textContent = 'Verifying...';
-            loginErrorMsg.classList.add('hidden');
-
-            try {
-                // 1. Look up the TL Code
-                const tlCodeRef = doc(db, tlCodesCollectionPath, tlCode);
-                const tlCodeDoc = await getDoc(tlCodeRef);
-
-                if (!tlCodeDoc.exists()) {
-                    throw new Error("Invalid Unique Code.");
-                }
-
-                // 2. Get the TL's name from the document
-                const tlName = tlCodeDoc.data().name;
-                if (!tlName) {
-                    // This is a database setup error.
-                    // MODIFIED: Clearer error message
-                    console.error(`TL Code doc '${tlCode}' is missing a 'name' field.`);
-                    throw new Error(`Data Error: The TL Code "${tlCode}" is valid, but is missing the required 'name' field in Firebase.`);
-                }
-
-                // 3. Check if this TL's name is already in the users collection
-                const name_lowercase = tlName.toLowerCase();
-                const usersQuery = query(collection(db, usersCollectionPath), where("name_lowercase", "==", name_lowercase));
-                const querySnapshot = await getDocs(usersQuery);
-
-                if (!querySnapshot.empty) {
-                    // This is a RETURNING TL
-                    const existingUserDoc = querySnapshot.docs[0];
-                    const storedRole = existingUserDoc.data().role;
-
-                    if (storedRole === 'guide') {
-                        throw new Error("This name is registered as a Guide. Please log in as a Guide or contact an admin.");
-                    }
-
-                    // Role is 'tl', this is a re-login.
-                    loginSuccess('tl', tlName, null); // TLs don't have an EIN
-                } else {
-                    // This is a NEW TL (first time using this code)
-                    loginSuccess('tl', tlName, null);
-                }
-
-            } catch (error) {
-                console.error("Login Error: ", error);
-                loginErrorMsg.textContent = error.message;
-                loginErrorMsg.classList.remove('hidden');
-                tlLoginBtn.disabled = false;
-                tlLoginBtn.textContent = 'Login as TL';
-            }
-        }
-
-
-        /**
-         * Logs the user out by clearing their role and reloading
-         * MODIFIED: Now signs out of Firebase Auth as well
-         */
-        async function handleLogout() { // --- MADE ASYNC ---
-            // Clear all user data
-            localStorage.removeItem('userRole');
-            localStorage.removeItem('userName');
-            localStorage.removeItem('userEIN');
-            
-            try {
-                // --- ADDED: Sign out of Firebase ---
-                // This destroys the anonymous user, forcing a new
-                // one to be created on reload. This is the fix.
-                await signOut(auth);
-                // --- END ---
-            } catch (error) {
-                console.error("Error signing out: ", error);
-            } finally {
-                // Reload the page to restart the login flow
-                location.reload();
-            }
-        }
-
-        /**
-         * Checks if a user role is saved in localStorage.
-         * If not, shows the login modal. If so, starts the app.
-         */
-        function checkAppLogin() {
-            // Check for both role and Name
-            const savedRole = localStorage.getItem('userRole');
-            const savedName = localStorage.getItem('userName');
-            const savedEIN = localStorage.getItem('userEIN'); // ADDED
-            
-            if (savedRole && savedName) {
-                // User is already "logged in", set globals and start the app
-                userRole = savedRole;
-                userName = savedName;
-                userEIN = savedEIN; // ADDED
-                
-                // Set default page based on role (for page load)
-                if (userRole === 'tl') {
-                    currentPage = 'submit';
-                } else {
-                    currentPage = 'known';
-                }
-                
-                loginModal.classList.add('hidden');
-                appLoader.classList.remove('hidden'); // ADDED: Show loader
-                initializeAppLogic();
-            } else {
-                // No role/Name saved, show the login modal
-                loginModal.classList.remove('hidden');
-                appLoader.classList.add('hidden'); // ADDED: Ensure loader is hidden
-            }
-        }
-        
-        // --- ADDED: initializeFirebase function ---
-        /**
-         * NEW: Initializes the Firebase app, db, and auth objects.
-         * This must be called before any other Firebase operations.
-         */
-        function initializeFirebase() {
-            // 3. Initialize Firebase
-            // -----------------------------------------------------------------
-            // --- IMPORTANT: PASTE YOUR OWN FIREBASE CONFIG OBJECT HERE ---
-            // (You get this from your Firebase Project Settings)
-            // -----------------------------------------------------------------
-            // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-                let firebaseConfig = { // CHANGED to let
-                    apiKey: "YOUR_API_KEY",
-                    authDomain: "YOUR_AUTH_DOMAIN",
-                    projectId: "YOUR_PROJECT_ID",
-                    storageBucket: "YOUR_STORAGE_BUCKET",
-                    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-                    appId: "YOUR_APP_ID",
-                    measurementId: "YOUR_MEASUREMENT_ID"
-                };
-            // -----------------------------------------------------------------
-            // FALLBACK Config (if the one above is not filled)
-            if (firebaseConfig.apiKey === "YOUR_API_KEY") {
-                console.warn("Using placeholder Firebase config. Please update `firebaseConfig` in the script.");
-                 const placeholderConfig = {
-                    apiKey: "AIzaSyBeci550NSuYHxGNctUPCEozou92w8n0Rw",
-                    authDomain: "my-bug-board.firebaseapp.com",
-                    projectId: "my-bug-board",
-                    storageBucket: "my-bug-board.appspot.com",
-                    messagingSenderId: "276540108265",
-                    appId: "1:276540108265:web:7f32c71f66e34f4d582f78",
-                    measurementId: "G-Y6BL20YLJW"
-                };
-                firebaseConfig = placeholderConfig; // CHANGED to direct assignment
-            }
-            // -----------------------------------------------------------------
-
-
-            const app = initializeApp(firebaseConfig);
-            db = getFirestore(app);
-            auth = getAuth(app);
-            setLogLevel('debug');
-        }
-        // --- END: initializeFirebase function ---
-
-
-        /**
-         * Contains the main app logic that runs *after* a role is set
-         * MOVED Firebase init to initializeFirebase()
-         */
-        async function initializeAppLogic() {
-            // 1. Set up UI based on role
-            renderUIForRole();
-            
-            // 2. Set user Name in header
-            userNameDisplay.textContent = userName; // MODIFIED
-
-            // --- MOVED onAuthStateChanged to main() ---
-
-            // --- MODIFIED: Create/Update User Document ---
-            // This logic now supports re-login (i.e. cache cleared)
-            // It tries to find the user by name. If found, it uses that doc.
-            // If not found, it creates a new doc with the current anon-userId.
-            try {
-                const name_lowercase = userName.trim().toLowerCase();
-                const usersQuery = query(collection(db, usersCollectionPath), where("name_lowercase", "==", name_lowercase));
-                const querySnapshot = await getDocs(usersQuery);
-
-                let userRef;
-                if (!querySnapshot.empty) {
-                    // User found. This is a re-login.
-                    // We *must* use their existing doc ID, NOT the new anon-ID.
-                    userRef = querySnapshot.docs[0].ref;
-                    
-                    // We also have to update our *global userId* to this existing ID,
-                    // so all future activity is logged to the correct user.
-                    userId = userRef.id;
-                } else {
-                    // User not found. This is a first-time registration.
-                    // Use the current anon-ID to create the new doc.
-                    // This 'userId' is the global one set by onAuthStateChanged.
-                    userRef = doc(db, usersCollectionPath, userId);
-                }
-
-                // Now, create or update the document with the correct userRef.
-                // MODIFIED: Save EIN for guides, or ensure it's null for TLs
-                const dataToSet = {
-                    name: userName,
-                    role: userRole,
-                    lastLogin: serverTimestamp(),
-                    name_lowercase: name_lowercase,
-                    ein: userEIN || null // Save EIN if it exists, otherwise null
-                };
-                
-                await setDoc(userRef, dataToSet, { merge: true });
-                
-            } catch (error) { // <-- FIXED: This was a malformed catch block
-                console.error("Failed to create/update user document: ", error);
-            }
-            // --- End User Document ---
-            
-            ticketsCollectionRef = collection(db, ticketsCollectionPath);
-            onSnapshot(query(ticketsCollectionPath), renderApp);
-
-            // Seed permanent issues on load
-            await seedPermanentIssues();
-
-            // 5. Attach all event handlers
-            newTicketForm.addEventListener('submit', handleNewTicketSubmit);
-            
-            // Listen for clicks on the parent lists
-            newTicketsList.addEventListener('click', handleListClicks);
-            // MODIFIED: Attach to new 2-column lists
-            persistentIssuesList.addEventListener('click', handleListClicks);
-            newIssuesList.addEventListener('click', handleListClicks);
-            
-            completedTicketsList.addEventListener('click', handleListClicks); 
-
-            // Modal listeners
-            modalCancelBtn.addEventListener('click', hideModal);
-            affectedForm.addEventListener('submit', handleAffectedSubmit);
-
-            // NEW Complete Modal listeners
-            completeModalCancelBtn.addEventListener('click', hideCompleteModal);
-            completeForm.addEventListener('submit', handleCompleteSubmit);
-
-            // ADDED: Download button listeners
-            downloadCompletedBtn.addEventListener('click', downloadCompletedReport);
-            downloadMetricsBtn.addEventListener('click', downloadMetricsReport);
-
-            // New Nav Listeners
-            hamburgerBtn.addEventListener('click', showSidebar);
-            sidebarOverlay.addEventListener('click', hideSidebar);
-            navLinks.forEach(link => {
-                link.addEventListener('click', handleNavClick);
-            });
-            logoutBtn.addEventListener('click', handleLogout); // Attach sidebar logout listener
-            headerLogoutBtn.addEventListener('click', handleLogout); // Attach header logout listener
-
-            // 6. Initial Page Render
-            renderPage();
-            
-            // ADDED: Hide loader AFTER first render
-            appLoader.classList.add('hidden');
-        }
-
-        // --- END NEW Role-Based Functions ---
-
-        // --- NEW: Download Report Functions ---
-
-        /**
-         * Helper function to escape text for a CSV cell.
-         * Wraps in quotes, and doubles any existing quotes.
-         */
-        function escapeCSV(str) {
-            if (str === null || str === undefined) str = "";
-            let result = String(str);
-            // Check if it contains commas, quotes, or newlines
-            if (result.search(/("|,|\n)/g) >= 0) {
-                // Wrap in double quotes and escape existing quotes
-                result = '"' + result.replace(/"/g, '""') + '"';
-            }
-            return result;
-        }
-
-        /**
-         * Helper function to trigger a CSV download.
-         */
-        function downloadCSV(csvContent, fileName) {
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement("a");
-            if (link.download !== undefined) {
-                const url = URL.createObjectURL(blob);
-                link.setAttribute("href", url);
-                link.setAttribute("download", fileName);
-                link.style.visibility = 'hidden';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            }
-        }
-
-        /**
-         * Generates and downloads a report of completed issues.
-         */
-        function downloadCompletedReport() {
-            if (!globalSnapshot) {
-                console.error("Data not loaded yet.");
-                return;
-            }
-
-            let csvRows = ["Title,Description,Resolution,Submitted By,Approved By,Resolved By,Completed At"]; // MODIFIED: Added columns
-            let completedTickets = [];
-
-            globalSnapshot.forEach(doc => {
-                if (doc.data().status === 'COMPLETE') {
-                    completedTickets.push(doc.data());
-                }
-            });
-
-            // Sort by most recently completed
-            completedTickets.sort((a, b) => (b.completedAt?.toDate() || 0) - (a.completedAt?.toDate() || 0));
-
-            completedTickets.forEach(ticket => {
-                const title = escapeCSV(ticket.title);
-                const desc = escapeCSV(ticket.description);
-                const resolution = escapeCSV(ticket.fixDescription);
-                const submittedBy = escapeCSV(ticket.name); // ADDED
-                const approvedBy = escapeCSV(ticket.approverName); // ADDED
-                const resolvedBy = escapeCSV(ticket.resolverName); // ADDED
-                const completedAt = escapeCSV(ticket.completedAt ? ticket.completedAt.toDate().toLocaleString() : 'N/A');
-                csvRows.push(`${title},${desc},${resolution},${submittedBy},${approvedBy},${resolvedBy},${completedAt}`); // MODIFIED
-            });
-
-            downloadCSV(csvRows.join("\n"), "completed_issues_report.csv");
-        }
-
-        /**
-         * Generates and downloads a report of the daily metrics.
-         */
-        function downloadMetricsReport() {
-            if (!globalSnapshot) {
-                console.error("Data not loaded yet.");
-                return;
-            }
-
-            let csvRows = ["Title,Daily Affected Count,Type,Submitted By,Approved By"]; // MODIFIED: Added columns
-            let knownTickets = [];
-            const startOfToday = getStartOfDay();
-
-            globalSnapshot.forEach(doc => {
-                const ticket = doc.data();
-                if (ticket.status === 'KNOWN') {
-                    const affectedUsers = ticket.affectedUsers || [];
-                    const dailyAffectedUsers = affectedUsers.filter(user => {
-                        return user.timestamp && user.timestamp.toDate() > startOfToday;
-                    });
-                    ticket.dailyAffectedCount = dailyAffectedUsers.length;
-                    knownTickets.push(ticket);
-                }
-            });
-
-            // Sort by most affected
-            knownTickets.sort((a, b) => (b.dailyAffectedCount || 0) - (a.dailyAffectedCount || 0));
-
-            knownTickets.forEach(ticket => {
-                const title = escapeCSV(ticket.title);
-                const count = ticket.dailyAffectedCount;
-                const type = escapeCSV(ticket.isPermanent ? "Permanent" : "New & Important");
-                const submittedBy = escapeCSV(ticket.name); // ADDED
-                const approvedBy = escapeCSV(ticket.approverName); // ADDED
-                csvRows.push(`${title},${count},${type},${submittedBy},${approvedBy}`); // MODIFIED
-            });
-
-            downloadCSV(csvRows.join("\n"), "daily_metrics_report.csv");
-        }
-
-
-        // --- NEW: Permanent Issue Seeding ---
-
-        /**
-         * Checks for and creates the 5 permanent issues if they don't exist.
-         */
-        async function seedPermanentIssues() {
-            const permanentIssueTitles = [
-                'CCE Issues',
-                'VPN Issues',
-                'Consumer Issues',
-                'OneView Issues',
-                'Advisor Hub Issues'
-            ];
-
-            try {
-                // Check if any permanent issues exist at all
-                const q = query(ticketsCollectionRef, where("isPermanent", "==", true));
-                const querySnapshot = await getDocs(q);
-                
-                const existingTitles = new Set(querySnapshot.docs.map(doc => doc.data().title));
-                const missingTitles = permanentIssueTitles.filter(title => !existingTitles.has(title));
-
-                if (missingTitles.length > 0) {
-                    console.log(`Seeding ${missingTitles.length} missing permanent issues...`);
-                    // Use a loop to add each missing doc
-                    for (const title of missingTitles) {
-                        await addDoc(ticketsCollectionRef, {
-                            title: title,
-                            description: "This is an ongoing, persistent operational issue.",
-                            status: 'KNOWN',
-                            isPermanent: true, // Special flag
-                            createdAt: serverTimestamp(),
-                            acknowledgedAt: serverTimestamp(),
-                            affectedUsers: [],
-                            // ADDED: Set a generic submitter name for permanent issues
-                            name: "Bug Board System",
-                            approverName: "Bug Board System"
-                        });
-                    }
-                } else {
-                    console.log('All permanent issues already exist.');
-                }
-            } catch (error) {
-                console.error("Error seeding permanent issues: ", error);
-            }
-        }
-
-        /**
-         * Renders a single ticket card into the specified list.
-         * This is for the "Known Issues" page (both columns)
-         */
-        function renderTicketCard(listElement, ticket) {
-            const affectedUsers = ticket.affectedUsers || [];
-
-            // --- START OF DAILY RESET LOGIC ---
-            const startOfToday = getStartOfDay();
-
-            // 1. Filter the list to only include votes from "today"
-            const dailyAffectedUsers = affectedUsers.filter(user => {
-                // Ensure timestamp exists and can be converted to a Date
-                return user.timestamp && user.timestamp.toDate() > startOfToday;
-            });
-            
-            // 2. Use the "daily" count for all UI
-            const numAffected = dailyAffectedUsers.length;
-            totalAffectedCount += numAffected; // Add to global metric
-
-            // 3. Add to unique set for "daily" unique users
-            dailyAffectedUsers.forEach(user => {
-                if (user.name) { // MODIFIED: ein to name
-                    uniqueAffectedUsers.add(user.name); // MODIFIED
-                }
-            });
-
-            // 4. Check if this user is in the "daily" list
-            const userIsAffected = dailyAffectedUsers.some(user => user.name === userName); // MODIFIED
-            // --- END OF DAILY RESET LOGIC ---
-
-            // --- START: Time Open Logic ---
-            let timeOpenHtml = '';
-            if (ticket.isPermanent) {
-                // MODIFIED: Color
-                timeOpenHtml = 'Permanent Issue';
-            } else {
-                timeOpenHtml = `Open for ${formatTimeAgo(ticket.acknowledgedAt || ticket.createdAt)}`;
-            }
-            // --- END: Time Open Logic ---
-
-            // ADDED: Logic to show submitter and approver names
-            const submitterHtml = ticket.name ? `<p class="text-xs text-slate-500">Submitted by: <strong class="text-slate-700">${ticket.name}</strong></p>` : '';
-            const approverHtml = ticket.approverName ? `<p class="text-xs text-slate-500">Approved by: <strong class="text-slate-700">${ticket.approverName}</strong></p>` : '';
-
-
-            // Conditionally hide "Complete" button for permanent issues
-            const completeButtonHtml = ticket.isPermanent
-                ? '' // Don't render the button if the issue is permanent
-                // MODIFIED: Color
-                : `<button data-id="${ticket.id}" class="complete-btn w-full text-sm font-medium py-1 px-3 rounded-lg transition bg-primary text-white hover:bg-primary/90 mt-2">
-                        Mark as Complete (TL)
-                    </button>`;
-
-            const el = document.createElement('div');
-            el.className = 'p-4 border border-slate-200 rounded-lg shadow-sm';
-            
-            // MODIFIED: Card Layout
-            el.innerHTML = `
-                <h3 class="font-semibold text-lg">${ticket.title}</h3>
-                <p class="text-sm text-slate-600 mb-3">${ticket.description}</p>
-                
-                <!-- Audit trail -->
-                <div class="text-xs text-slate-500 mb-3 space-y-1 p-2 bg-slate-50 rounded-md">
-                    ${submitterHtml}
-                    ${approverHtml}
+            let icon = '';
+            if(type === 'success') icon = `<svg class="w-6 h-6 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`;
+            else if(type === 'error') icon = `<svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+            else icon = `<svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+
+            toast.innerHTML = `
+                <div class="flex items-center gap-3">
+                    ${icon}
+                    <span class="text-sm font-medium text-slate-700">${message}</span>
                 </div>
-
-                <div class="flex justify-between items-center text-sm mb-3">
-                    <!-- MODIFIED: Color -->
-                    <span class="font-medium text-slate-700">Daily Affected: <strong class="text-secondary/90">${numAffected}</strong></span>
-                    <span class="font-medium ${ticket.isPermanent ? 'text-primary' : 'text-slate-500'}">${timeOpenHtml}</span>
-                </div>
-                <!-- MODIFIED: Color -->
-                <button data-id="${ticket.id}" class="affected-btn w-full text-sm font-medium py-1 px-3 rounded-lg transition ${userIsAffected ? 'bg-slate-300 text-slate-600 cursor-not-allowed' : 'bg-secondary text-white hover:bg-secondary/90'}" ${userIsAffected ? 'disabled' : ''}>
-                    ${userIsAffected ? 'You reported this today' : "I've been affected by this"}
-                </button>
-                ${completeButtonHtml}
+                <button onclick="this.parentElement.remove()" class="text-slate-400 hover:text-slate-600 ml-4">&times;</button>
             `;
-            listElement.appendChild(el);
-        }
 
-        /**
-         * The main render function. Processes the snapshot data and updates the UI.
-         */
-        function renderApp(querySnapshot) {
-            if (!querySnapshot) return; // Don't run if data isn't loaded
+            container.appendChild(toast);
             
-            globalSnapshot = querySnapshot; // Store for metric recalculation
-
-            // Clear lists
-            newTicketsList.innerHTML = '';
-            // MODIFIED: Clear new 2-column lists
-            persistentIssuesList.innerHTML = '';
-            newIssuesList.innerHTML = '';
-            
-            completedTicketsList.innerHTML = '';
-
-            // Metric counters
-            totalAffectedCount = 0; // MODIFIED: Reset global counter
-            uniqueAffectedUsers = new Set(); // MODIFIED: Reset global counter
-            
-            // Arrays for sorting
-            let pendingTickets = [];
-            let knownTickets = [];
-            let completedTicketsArray = []; 
-
-            if (querySnapshot.empty) {
-                // Handled below by checking array lengths
-            }
-
-            querySnapshot.forEach(doc => {
-                const ticket = doc.data();
-                const ticketId = doc.id;
-                
-                if (ticket.status === 'PENDING') {
-                    pendingTickets.push({ id: ticketId, ...ticket });
-                } 
-                else if (ticket.status === 'KNOWN') {
-                    knownTickets.push({ id: ticketId, ...ticket });
-                }
-                else if (ticket.status === 'COMPLETE') {
-                    completedTicketsArray.push({ id: ticketId, ...ticket }); 
-                }
-            });
-
-            // --- RENDER PENDING (NEW) TICKETS ---
-            if (pendingTickets.length > 0) {
-                // Sort pending tickets by newest first
-                pendingTickets.sort((a, b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0));
-
-                pendingTickets.forEach(ticket => {
-                    const el = document.createElement('div');
-                    el.className = 'p-4 border border-slate-200 rounded-lg shadow-sm';
-                    el.innerHTML = `
-                        <h3 class="font-semibold text-lg">${ticket.title}</h3>
-                        <p class="text-sm text-slate-600 mb-2">${ticket.description}</p>
-                        <!-- MODIFIED: Name is now shown on the "Known" card -->
-                        <p class="text-xs text-slate-400 mb-3">Submitted ${formatTimeAgo(ticket.createdAt)} by <strong class="text-slate-600">${ticket.name}</strong></p>
-                        <button data-id="${ticket.id}" class="approve-btn w-full bg-green-500 text-white text-sm font-medium py-1 px-3 rounded-lg hover:bg-green-600 transition">
-                            Approve (Move to Known)
-                        </button>
-                    `;
-                    newTicketsList.appendChild(el);
-                });
-            } else {
-                newTicketsList.innerHTML = '<p class="text-slate-400">No pending issues...</p>';
-            }
-
-            // --- RENDER KNOWN TICKETS (SORTED) ---
-            
-            // MODIFIED: Separate into two lists
-            let persistentTickets = [];
-            let newAndImportantTickets = [];
-
-            knownTickets.forEach(ticket => {
-                if (ticket.isPermanent) {
-                    persistentTickets.push(ticket);
-                } else {
-                    newAndImportantTickets.push(ticket);
-                }
-            });
-
-            // Sort by most affected users first
-            persistentTickets.sort((a, b) => (b.affectedUsers?.length || 0) - (a.affectedUsers?.length || 0));
-            newAndImportantTickets.sort((a, b) => (b.affectedUsers?.length || 0) - (a.affectedUsers?.length || 0));
-
-            // Render Persistent Issues
-            if (persistentTickets.length > 0) {
-                persistentTickets.forEach(ticket => {
-                    renderTicketCard(persistentIssuesList, ticket);
-                });
-            } else {
-                persistentIssuesList.innerHTML = '<p class="text-slate-400">No persistent issues...</p>';
-            }
-
-            // Render New & Important Issues
-            if (newAndImportantTickets.length > 0) {
-                newAndImportantTickets.forEach(ticket => {
-                    renderTicketCard(newIssuesList, ticket);
-                });
-            } else {
-                newIssuesList.innerHTML = '<p class="text-slate-400">No new issues...</p>';
-            }
-            
-            // --- RENDER COMPLETED TICKETS ---
-            if (completedTicketsArray.length > 0) {
-                 // Sort completed tickets by most recent first
-                completedTicketsArray.sort((a, b) => (b.completedAt?.toDate() || 0) - (a.completedAt?.toDate() || 0)); 
-                
-                completedTicketsArray.forEach(ticket => { 
-                    // ADDED: Check for fix description and create HTML
-                    const fixDescHtml = ticket.fixDescription
-                        ? `<p class="text-sm text-slate-600 mt-2 p-2 bg-green-50 rounded-lg"><strong>Resolution:</strong> ${ticket.fixDescription}</p>`
-                        : '';
-                    
-                    // ADDED: Resolver name
-                    const resolverHtml = ticket.resolverName
-                        ? `<p class="text-xs text-slate-500 mt-2">Resolved by: <strong class="text-slate-700">${ticket.resolverName}</strong></p>`
-                        : '';
-
-                    const el = document.createElement('div');
-                    el.className = 'p-4 border border-slate-200 rounded-lg shadow-sm bg-slate-50';
-                    el.innerHTML = `
-                        <h3 class="font-semibold text-lg text-slate-500 line-through">${ticket.title}</h3>
-                        <p class="text-sm text-slate-500 mb-2">${ticket.description}</p>
-                        <p class="text-xs text-slate-400">Completed ${formatTimeAgo(ticket.completedAt)}</p>
-                        ${fixDescHtml} <!-- ADDED -->
-                        ${resolverHtml} <!-- ADDED -->
-                    `;
-                    completedTicketsList.appendChild(el);
-                });
-            } else {
-                completedTicketsList.innerHTML = '<p class="text-slate-400">No completed issues...</p>';
-            }
-
-            // --- UPDATE METRICS ---
-            metricTotalAffected.textContent = totalAffectedCount;
-            metricUniqueAffected.textContent = uniqueAffectedUsers.size; // MODIFIED: Set unique count
-            
-            // --- Update Top 5 List ---
-            top5List.innerHTML = ''; // Clear old list
-
-            // Sort all known tickets by daily count for metrics
-            // We need to re-calculate daily affected count here for sorting
-            knownTickets.forEach(ticket => {
-                const startOfToday = getStartOfDay();
-                const dailyAffectedUsers = (ticket.affectedUsers || []).filter(user => {
-                    return user.timestamp && user.timestamp.toDate() > startOfToday;
-                });
-                ticket.dailyAffectedCount = dailyAffectedUsers.length;
-            });
-
-            knownTickets.sort((a, b) => (b.dailyAffectedCount || 0) - (a.dailyAffectedCount || 0));
-
-            const top5Issues = knownTickets.slice(0, 5);
-            
-            if (top5Issues.length > 0) {
-                top5Issues.forEach((ticket, index) => {
-                    const numAffected = ticket.dailyAffectedCount || 0;
-                    const el = document.createElement('div');
-                    el.className = 'flex justify-between items-center p-3 bg-slate-50 rounded-lg';
-                    el.innerHTML = `
-                        <div>
-                            <span class="font-bold text-slate-800">${index + 1}.</span>
-                            <span class="font-medium ml-2">${ticket.title}</span>
-                        </div>
-                        <!-- MODIFIED: Color -->
-                        <span class="font-bold text-secondary/90 text-lg">${numAffected}</span>
-                    `;
-                    top5List.appendChild(el);
-                });
-            } else {
-                top5List.innerHTML = '<p class="text-slate-400">No known issues to display...</p>';
-            }
-
-            // --- Update Pie Chart ---
-            
-            // 1. Destroy old chart if it exists
-            if (metricsChart) {
-                metricsChart.destroy();
-            }
-
-            // 2. Prepare data (Top 5 + "Other")
-            const chartLabels = [];
-            const chartData = [];
-            let otherCount = 0;
-
-            knownTickets.forEach((ticket, index) => {
-                const count = ticket.dailyAffectedCount || 0;
-                if (count > 0) { // Only add to chart if it has votes
-                    if (index < 5) {
-                        chartLabels.push(ticket.title);
-                        chartData.push(count);
-                    } else {
-                        otherCount += count;
-                    }
-                }
-            });
-
-            if (otherCount > 0) {
-                chartLabels.push('Other');
-                chartData.push(otherCount);
-            }
-            
-            // 3. Create new chart
-            if (chartData.length > 0) {
-                const ctx = chartCanvas.getContext('2d');
-                metricsChart = new Chart(ctx, {
-                    type: 'pie',
-                    data: {
-                        labels: chartLabels,
-                        datasets: [{
-                            label: '# of Votes',
-                            data: chartData,
-                            backgroundColor: [
-                                'rgba(100, 0, 170, 0.7)',  // primary
-                                'rgba(0, 155, 164, 0.7)',  // secondary
-                                'rgba(100, 0, 170, 0.5)',  // primary light
-                                'rgba(0, 155, 164, 0.5)',  // secondary light
-                                'rgba(100, 0, 170, 0.3)',  // primary lightest
-                                'rgba(0, 155, 164, 0.3)'   // secondary lightest
-                            ],
-                            borderColor: [
-                                'rgba(100, 0, 170, 1)',
-                                'rgba(0, 155, 164, 1)',
-                                'rgba(100, 0, 170, 1)',
-                                'rgba(0, 155, 164, 1)',
-                                'rgba(100, 0, 170, 1)',
-                                'rgba(0, 155, 164, 1)'
-                            ],
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        plugins: {
-                            legend: {
-                                position: 'top',
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    // Show percentage on tooltip
-                                    label: function(context) {
-                                        let label = context.label || '';
-                                        if (label) {
-                                            label += ': ';
-                                        }
-                                        const value = context.parsed;
-                                        if(totalAffectedCount === 0) return label + "0 votes (0.0%)"; // Avoid divide by zero
-                                        
-                                        const percentage = ((value / totalAffectedCount) * 100).toFixed(1) + '%';
-                                        label += `${value} votes (${percentage})`;
-                                        return label;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                });
-            }
-        }
-
-        // --- EVENT HANDLERS ---
-
-        /**
-         * Handle New Ticket Submission
-         * MODIFIED: Removed all validation logic. Assumes user is a valid TL.
-         */
-        async function handleNewTicketSubmit(e) {
-            e.preventDefault();
-            const title = document.getElementById('ticket-title').value;
-            const description = document.getElementById('ticket-desc').value;
-            const name = ticketNameInput.value; // MODIFIED: Get auto-filled Name
-
-            // Simplified check
-            if (!title || !description || !userId || !name) {
-                console.warn("Submit issue form incomplete.");
-                return;
-            }
-
-            try {
-                // Submit ticket - no validation needed
-                await addDoc(ticketsCollectionRef, {
-                    title: title,
-                    description: description,
-                    name: name, // MODIFIED: Save the submitter's Name
-                    // REMOVED: uniqueCode field
-                    status: 'PENDING', // Initial status
-                    createdAt: serverTimestamp(),
-                    submitterId: userId, // Firebase auth ID
-                    affectedUsers: [] 
-                });
-
-                // Log the activity
-                try {
-                    const userActivityLogRef = collection(db, usersCollectionPath, userId, "activity_log");
-                    await addDoc(userActivityLogRef, {
-                        timestamp: serverTimestamp(),
-                        action: 'SUBMIT_TICKET',
-                        ticketTitle: title
-                    });
-                } catch (error) {
-                    console.error("Failed to log submit activity: ", error);
-                }
-                
-                // Reset form and navigate
-                newTicketForm.reset();
-                ticketNameInput.value = userName; // MODIFIED
-                currentPage = 'pending';
-                renderPage();
-
-            } catch (error) {
-                // This will now only catch Firestore submission errors
-                console.error("Error adding document: ", error);
-            }
-        }
-
-        /**
-         * Handle Clicks on the lists (for Acknowledge and Affected buttons)
-         */
-        function handleListClicks(e) {
-            // Acknowledge Button Click
-            if (e.target.classList.contains('approve-btn')) {
-                const ticketId = e.target.dataset.id;
-                const ticketRef = doc(db, ticketsCollectionPath, ticketId);
-                updateDoc(ticketRef, {
-                    status: 'KNOWN',
-                    acknowledgedAt: serverTimestamp(),
-                    approverName: userName // ADDED: Log who approved it
-                }).catch(error => console.error("Error updating ticket: ", error));
-            }
-
-            // "I've been affected" Button Click
-            if (e.target.classList.contains('affected-btn')) {
-                const ticketId = e.target.dataset.id;
-                showModal(ticketId);
-            }
-
-            // "Complete" Button Click
-            if (e.target.classList.contains('complete-btn')) {
-                const ticketId = e.target.dataset.id;
-                // CHANGED: Show modal instead of directly updating
-                showCompleteModal(ticketId);
-            }
-        }
-
-        /**
-         * Handle "Affected" Modal Form Submission
-         */
-        async function handleAffectedSubmit(e) {
-            e.preventDefault();
-            const ticketId = affectedTicketIdInput.value;
-            const name = affectedNameInput.value; // MODIFIED: Get auto-filled Name
-            const comments = affectedCommentsInput.value;
-            const errorMsg = document.getElementById('modal-error-msg');
-
-            if (!ticketId || !name || !userId) return; // MODIFIED
-
-            errorMsg.textContent = '';
-            errorMsg.classList.add('hidden');
-            
-            const newAffectedEntry = {
-                userId: userId, // Firebase auth ID
-                name: name,       // MODIFIED: User's Name
-                comments: comments,
-                // MODIFIED: Store the timestamp of the report
-                timestamp: new Date() // Use client-side date
-            };
-
-            try {
-                const ticketRef = doc(db, ticketsCollectionPath, ticketId);
-                const ticketDoc = await getDoc(ticketRef);
-
-                if (ticketDoc.exists()) {
-                    const ticket = ticketDoc.data();
-                    const affectedUsers = ticket.affectedUsers || [];
-
-                    // MODIFIED: Check if Name is already in the list *for today*
-                    const startOfToday = getStartOfDay();
-                    const isAlreadyAffected = affectedUsers.some(user => {
-                        return user.name === name && // MODIFIED
-                               user.timestamp && 
-                               user.timestamp.toDate() > startOfToday;
-                    });
-
-                    if (isAlreadyAffected) {
-                        errorMsg.textContent = 'You have already reported this issue today.';
-                        errorMsg.classList.remove('hidden');
-                    } else {
-                        // Not already affected, add the new entry
-                        affectedUsers.push(newAffectedEntry);
-                        await updateDoc(ticketRef, {
-                            affectedUsers: affectedUsers
-                        });
-
-                        // --- MODIFIED: Log activity to the USER'S subcollection ---
-                        try {
-                            // Create a ref to the user's specific activity_log
-                            const userActivityLogRef = collection(db, usersCollectionPath, userId, "activity_log");
-                            await addDoc(userActivityLogRef, {
-                                timestamp: serverTimestamp(),
-                                action: 'REPORT_AFFECTED',
-                                ticketTitle: ticket.title // Get title from the doc we already fetched
-                            });
-                        } catch (error) {
-                            console.error("Failed to log affected activity: ", error);
-                        }
-                        // --- End Log ---
-
-                        hideModal();
-                    }
-                } else {
-                    // This else block was missing, it's good practice to have it.
-                    console.error("Could not find ticket to update.");
-                    errorMsg.textContent = 'Error: Could not find this ticket.';
-                    errorMsg.classList.remove('hidden');
-                }
-            } catch (error) {
-                console.error("Error reporting affected issue: ", error);
-                errorMsg.textContent = 'An error occurred. Please try again.';
-                errorMsg.classList.remove('hidden');
-            }
-        }
-
-        /**
-         * Handle "Complete" Modal Form Submission
-         */
-        async function handleCompleteSubmit(e) {
-            e.preventDefault();
-            const ticketId = completeTicketIdInput.value;
-            const fixDescription = completeDescriptionInput.value.trim();
-
-            if (!ticketId) return;
-            
-            if (!fixDescription) {
-                completeModalErrorMsg.textContent = 'Please provide resolution details.';
-                completeModalErrorMsg.classList.remove('hidden');
-                return;
-            }
-            
-            completeModalErrorMsg.textContent = '';
-            completeModalErrorMsg.classList.add('hidden');
-
-            try {
-                const ticketRef = doc(db, ticketsCollectionPath, ticketId);
-                await updateDoc(ticketRef, {
-                    status: 'COMPLETE',
-                    completedAt: serverTimestamp(),
-                    fixDescription: fixDescription, // ADDED
-                    resolverName: userName // ADDED: Log who resolved it
-                });
-                hideCompleteModal(); // MODIFIED: Was hideModal()
-            } catch (error) {
-                console.error("Error completing ticket: ", error);
-                completeModalErrorMsg.textContent = 'An error occurred. Please try again.';
-                completeModalErrorMsg.classList.remove('hidden');
-            }
+            // Remove after 4 seconds
+            setTimeout(() => {
+                toast.style.animation = 'fadeOut 0.3s ease-out forwards';
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
         }
 
         // --- INITIALIZATION ---
-        async function main() {
-            // 1. NEW: Initialize Firebase FIRST
-            initializeFirebase(); // FIX: Added this function call
+        async function init() {
+            // Initialize Firebase directly with the config
+            app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
 
-            // 2. MODIFIED: Attach login listener *after* we have a userId
-            
-            // 3. Check for a saved role, which will either show the modal
-            //    or call initializeAppLogic() to start the app.
-            
-            // 4. Sign in the user (Firebase auth)
+            // Auth State Listener
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
-                    // User is signed in (anonymously)
-                    userId = user.uid; // Set the global userId
-                    
-                    // Now that we have a userId, attach the new form listeners
-                    guideLoginForm.addEventListener('submit', handleGuideLogin);
-                    tlLoginForm.addEventListener('submit', handleTLLogin);
-
-                    // Attach Tab Listeners
-                    guideTabBtn.addEventListener('click', () => {
-                        guideLoginPanel.classList.remove('hidden');
-                        tlLoginPanel.classList.add('hidden');
-                        guideTabBtn.classList.add('bg-primary', 'text-white');
-                        guideTabBtn.classList.remove('bg-slate-200', 'text-slate-700', 'hover:bg-slate-300');
-                        tlTabBtn.classList.add('bg-slate-200', 'text-slate-700', 'hover:bg-slate-300');
-                        tlTabBtn.classList.remove('bg-primary', 'text-white');
-                        loginErrorMsg.classList.add('hidden');
-                    });
-
-                    tlTabBtn.addEventListener('click', () => {
-                        tlLoginPanel.classList.remove('hidden');
-                        guideLoginPanel.classList.add('hidden');
-                        tlTabBtn.classList.add('bg-primary', 'text-white');
-                        tlTabBtn.classList.remove('bg-slate-200', 'text-slate-700', 'hover:bg-slate-300');
-                        guideTabBtn.classList.add('bg-slate-200', 'text-slate-700', 'hover:bg-slate-300');
-                        guideTabBtn.classList.remove('bg-primary', 'text-white');
-                        loginErrorMsg.classList.add('hidden');
-                    });
-                    
-                    // And now, check if they are already logged in via localStorage
-                    checkAppLogin();
-
+                    currentUser.id = user.uid;
+                    checkLocalSession();
                 } else {
-                    // No user, sign in
+                    // Ensure we are signed in anonymously for DB access
                     try {
                         await signInAnonymously(auth);
-                    } catch (error) {
-                        console.error("Anonymous Authentication failed: ", error);
-                        loginModal.classList.remove('hidden');
-                        loginErrorMsg.textContent = "Could not connect to service. Please try again.";
-                        loginErrorMsg.classList.remove('hidden');
+                    } catch (e) {
+                        console.error(e);
+                        showToast("Connection Error. Check console.", "error");
+                        els.appLoader.classList.add('hidden');
                     }
+                }
+            });
+
+            setupEventListeners();
+        }
+
+        function checkLocalSession() {
+            const role = localStorage.getItem('userRole');
+            const name = localStorage.getItem('userName');
+            const ein = localStorage.getItem('userEIN');
+
+            if (role && name) {
+                // Validate session integrity
+                if (role === 'guide' && !ein) {
+                    clearSession();
+                    return;
+                }
+                loginSuccess(role, name, ein, false); // false = don't write to DB yet, wait for app load
+            } else {
+                els.loginModal.classList.remove('hidden');
+                els.appLoader.classList.add('hidden');
+            }
+        }
+
+        async function loginSuccess(role, name, ein, isNewLogin = true) {
+            currentUser.role = role;
+            currentUser.name = name;
+            currentUser.ein = ein;
+
+            // UI Updates
+            els.userName.textContent = name;
+            els.userRole.textContent = role === 'tl' ? 'Team Leader' : 'Guide';
+            els.userAvatar.textContent = name.charAt(0).toUpperCase();
+            
+            localStorage.setItem('userRole', role);
+            localStorage.setItem('userName', name);
+            if(ein) localStorage.setItem('userEIN', ein);
+
+            // Hide login, show loader temporarily
+            els.loginModal.classList.add('hidden');
+            if(isNewLogin) els.appLoader.classList.remove('hidden');
+
+            // Role-based Nav
+            updateNavVisibility();
+
+            // Start Data Stream
+            startDataListener();
+
+            // Sync User to DB
+            await syncUserToDB();
+        }
+
+        function clearSession() {
+            localStorage.clear();
+            signOut(auth).then(() => window.location.reload());
+        }
+
+        async function syncUserToDB() {
+            try {
+                const userRef = doc(db, COLL.USERS, currentUser.id);
+                await setDoc(userRef, {
+                    name: currentUser.name,
+                    role: currentUser.role,
+                    ein: currentUser.ein || null,
+                    lastLogin: serverTimestamp(),
+                    name_lowercase: currentUser.name.toLowerCase()
+                }, { merge: true });
+            } catch (e) {
+                console.error("Sync failed", e);
+            }
+        }
+
+        function updateNavVisibility() {
+            const submitBtn = document.querySelector('button[data-page="submit"]');
+            const pendingBtn = document.querySelector('button[data-page="pending"]');
+            const metricsBtn = document.querySelector('button[data-page="metrics"]');
+            
+            if (currentUser.role === 'guide') {
+                submitBtn.style.display = 'none';
+                pendingBtn.style.display = 'none';
+                // Ensure we don't stay on a hidden page
+                if(currentPage === 'submit' || currentPage === 'pending') currentPage = 'known';
+            } else {
+                submitBtn.style.display = 'flex';
+                pendingBtn.style.display = 'flex';
+            }
+            renderPage(currentPage);
+        }
+
+        // --- DATA HANDLING ---
+        function startDataListener() {
+            const q = query(collection(db, COLL.TICKETS));
+            onSnapshot(q, (snapshot) => {
+                globalSnapshot = snapshot;
+                renderAppContent();
+                els.appLoader.classList.add('hidden'); // App is ready
+            }, (error) => {
+                console.error(error);
+                showToast("Error fetching data.", "error");
+                els.appLoader.classList.add('hidden');
+            });
+        }
+
+        function renderAppContent() {
+            if (!globalSnapshot) return;
+
+            const tickets = [];
+            globalSnapshot.forEach(doc => tickets.push({ id: doc.id, ...doc.data() }));
+
+            // Filter by Search Term
+            const filteredTickets = tickets.filter(t => {
+                const searchStr = (t.title + ' ' + t.description).toLowerCase();
+                return searchStr.includes(currentSearchTerm);
+            });
+
+            // Sort helpers
+            const oneDayAgo = new Date(Date.now() - 86400000);
+            const startOfToday = new Date(); startOfToday.setHours(0,0,0,0);
+
+            // 1. Render Pending
+            if (currentUser.role === 'tl') {
+                const pending = filteredTickets.filter(t => t.status === 'PENDING' || (t.status === 'REJECTED' && t.rejectedAt?.toDate() > oneDayAgo));
+                pending.sort((a, b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0));
+                renderList('new-tickets-list', pending, renderPendingCard);
+            }
+
+            // 2. Render Known Issues
+            const known = filteredTickets.filter(t => t.status === 'KNOWN');
+            // Calculate daily metrics for sorting
+            known.forEach(t => {
+                t.dailyCount = (t.affectedUsers || []).filter(u => u.timestamp?.toDate() > startOfToday).length;
+            });
+            
+            const persistent = known.filter(t => t.isPermanent).sort((a, b) => b.dailyCount - a.dailyCount);
+            const newIssues = known.filter(t => !t.isPermanent).sort((a, b) => b.dailyCount - a.dailyCount);
+
+            renderList('persistent-issues-list', persistent, renderStandardCard);
+            renderList('new-issues-list', newIssues, renderStandardCard);
+
+            // 3. Render Completed
+            const completed = filteredTickets.filter(t => t.status === 'COMPLETE');
+            completed.sort((a, b) => (b.completedAt?.toDate() || 0) - (a.completedAt?.toDate() || 0));
+            renderList('completed-tickets-list', completed, renderCompletedCard);
+
+            // 4. Metrics (Always calculate on full dataset, ignoring search filter for accuracy)
+            updateMetrics(tickets, startOfToday);
+        }
+
+        // Generic List Renderer
+        function renderList(elementId, data, renderFn) {
+            const el = document.getElementById(elementId);
+            if (!el) return;
+            el.innerHTML = '';
+            if (data.length === 0) {
+                el.innerHTML = `
+                    <div class="flex flex-col items-center justify-center py-8 text-slate-400">
+                        <svg class="w-12 h-12 mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                        <p class="text-sm font-medium">No tickets found</p>
+                    </div>`;
+                return;
+            }
+            data.forEach(item => el.appendChild(renderFn(item)));
+        }
+
+        // --- CARD RENDERERS ---
+
+        function renderStandardCard(ticket) {
+            const div = document.createElement('div');
+            div.className = 'group bg-white border border-slate-200 rounded-xl p-5 hover:shadow-md transition-all duration-200';
+            
+            const startOfToday = new Date(); startOfToday.setHours(0,0,0,0);
+            const dailyAffected = (ticket.affectedUsers || []).filter(u => u.timestamp?.toDate() > startOfToday);
+            const count = dailyAffected.length;
+            const iAmAffected = dailyAffected.some(u => u.name === currentUser.name);
+
+            let actionBtn = '';
+            if(iAmAffected) {
+                actionBtn = `<button disabled class="w-full py-2 bg-slate-100 text-slate-500 font-medium rounded-lg text-sm flex items-center justify-center gap-2 cursor-not-allowed">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                    Reported Today
+                </button>`;
+            } else {
+                actionBtn = `<button onclick="openAffectedModal('${ticket.id}')" class="w-full py-2 bg-secondary text-white font-medium rounded-lg text-sm hover:bg-secondary-dark transition shadow-sm hover:shadow active:scale-[0.98]">
+                    I'm Affected
+                </button>`;
+            }
+
+            let tlActions = '';
+            if (currentUser.role === 'tl' && !ticket.isPermanent) {
+                tlActions = `<button onclick="openCompleteModal('${ticket.id}')" class="mt-2 w-full py-2 border border-primary text-primary font-medium rounded-lg text-sm hover:bg-primary hover:text-white transition">Resolve Issue</button>`;
+            }
+
+            const timeString = ticket.isPermanent ? 'Permanent' : formatTimeAgo(ticket.createdAt);
+
+            div.innerHTML = `
+                <div class="flex justify-between items-start mb-2">
+                    <h3 class="font-bold text-slate-800 text-lg leading-tight">${escapeHtml(ticket.title)}</h3>
+                    <div class="flex flex-col items-end">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${count > 0 ? 'bg-red-100 text-red-800' : 'bg-slate-100 text-slate-600'}">
+                            ${count} Affected
+                        </span>
+                    </div>
+                </div>
+                <p class="text-slate-600 text-sm mb-4 leading-relaxed">${escapeHtml(ticket.description)}</p>
+                
+                <div class="flex items-center justify-between text-xs text-slate-400 mb-4 border-t border-slate-50 pt-3">
+                    <span>${timeString}</span>
+                    ${currentUser.role === 'tl' && count > 0 ? `<button onclick="openAffectedList('${ticket.id}')" class="text-secondary hover:underline font-medium">View Guides</button>` : ''}
+                </div>
+
+                ${actionBtn}
+                ${tlActions}
+            `;
+            return div;
+        }
+
+        function renderPendingCard(ticket) {
+            const div = document.createElement('div');
+            div.className = `bg-white border rounded-xl p-5 ${ticket.status === 'REJECTED' ? 'border-red-200 bg-red-50/30' : 'border-slate-200'}`;
+            
+            let buttons = '';
+            if(ticket.status === 'REJECTED') {
+                buttons = `<button onclick="updateTicketStatus('${ticket.id}', 'PENDING')" class="w-full py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition">Reopen</button>`;
+            } else {
+                buttons = `
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="updateTicketStatus('${ticket.id}', 'REJECTED')" class="py-2 bg-white border border-red-500 text-red-500 rounded-lg text-sm font-medium hover:bg-red-50 transition">Reject</button>
+                        <button onclick="updateTicketStatus('${ticket.id}', 'KNOWN')" class="py-2 bg-emerald-500 text-white rounded-lg text-sm font-medium hover:bg-emerald-600 transition shadow-sm">Approve</button>
+                    </div>`;
+            }
+
+            div.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <h3 class="font-bold text-slate-800 ${ticket.status === 'REJECTED' ? 'line-through opacity-60' : ''}">${escapeHtml(ticket.title)}</h3>
+                    <span class="text-xs font-bold px-2 py-1 rounded bg-slate-100 text-slate-500">${ticket.name || 'Unknown'}</span>
+                </div>
+                <p class="text-slate-600 text-sm mt-2 mb-4 ${ticket.status === 'REJECTED' ? 'opacity-60' : ''}">${escapeHtml(ticket.description)}</p>
+                ${buttons}
+            `;
+            return div;
+        }
+
+        function renderCompletedCard(ticket) {
+            const div = document.createElement('div');
+            div.className = 'bg-slate-50 border border-slate-200 rounded-xl p-5 opacity-80 hover:opacity-100 transition';
+            
+            div.innerHTML = `
+                <div class="flex items-center gap-2 mb-2">
+                    <div class="p-1 bg-green-100 text-green-600 rounded-full">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    </div>
+                    <h3 class="font-bold text-slate-700 line-through decoration-slate-400">${escapeHtml(ticket.title)}</h3>
+                </div>
+                <p class="text-slate-500 text-sm mb-3">${escapeHtml(ticket.description)}</p>
+                
+                <div class="bg-white border border-green-100 p-3 rounded-lg">
+                    <p class="text-xs font-bold text-green-700 uppercase mb-1">Resolution</p>
+                    <p class="text-sm text-slate-700">${escapeHtml(ticket.fixDescription || 'No details provided.')}</p>
+                </div>
+                <div class="mt-3 text-xs text-slate-400 text-right">
+                    Fixed by ${ticket.resolverName} &bull; ${formatTimeAgo(ticket.completedAt)}
+                </div>
+            `;
+            return div;
+        }
+
+        // --- LOGIC ---
+
+        window.updateTicketStatus = async (id, status) => {
+            try {
+                const updateData = { status: status };
+                if(status === 'KNOWN') {
+                    updateData.acknowledgedAt = serverTimestamp();
+                    updateData.approverName = currentUser.name;
+                } else if(status === 'REJECTED') {
+                    updateData.rejectedAt = serverTimestamp();
+                    updateData.rejecterName = currentUser.name;
+                }
+                await updateDoc(doc(db, COLL.TICKETS, id), updateData);
+                showToast(`Ticket ${status.toLowerCase()}`, "success");
+            } catch(e) {
+                showToast("Action failed", "error");
+            }
+        };
+
+        // Modal Openers (Global Scope)
+        window.openAffectedModal = (id) => {
+            document.getElementById('affected-ticket-id').value = id;
+            document.getElementById('affected-name').value = currentUser.name;
+            toggleModal('affected-modal', true);
+        };
+
+        window.openCompleteModal = (id) => {
+            document.getElementById('complete-ticket-id').value = id;
+            toggleModal('complete-modal', true);
+        };
+
+        window.openAffectedList = (id) => {
+            if(!globalSnapshot) return;
+            const ticket = globalSnapshot.docs.find(d => d.id === id)?.data();
+            if(!ticket) return;
+
+            const startOfToday = new Date(); startOfToday.setHours(0,0,0,0);
+            const list = (ticket.affectedUsers || []).filter(u => u.timestamp?.toDate() > startOfToday);
+            list.sort((a,b) => b.timestamp.toDate() - a.timestamp.toDate());
+
+            const container = document.getElementById('affected-guides-list');
+            container.innerHTML = '';
+            
+            if(list.length === 0) {
+                container.innerHTML = '<p class="text-slate-400 text-center py-4">No reports today.</p>';
+            } else {
+                list.forEach(u => {
+                    const row = document.createElement('div');
+                    row.className = 'flex justify-between items-center p-3 bg-white rounded border border-slate-200';
+                    row.innerHTML = `
+                        <div>
+                            <div class="font-bold text-slate-700">${u.name}</div>
+                            <div class="text-xs text-slate-400">EIN: ${u.ein || 'N/A'}</div>
+                            ${u.comments ? `<div class="text-xs text-slate-500 mt-1 italic">"${escapeHtml(u.comments)}"</div>` : ''}
+                        </div>
+                        <div class="text-xs text-slate-400">${u.timestamp.toDate().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
+                    `;
+                    container.appendChild(row);
+                });
+            }
+            toggleModal('affected-guides-modal', true);
+        };
+
+        // --- EVENT LISTENERS & FORM HANDLING ---
+
+        function setupEventListeners() {
+            // Navigation
+            els.navLinks.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    currentPage = btn.dataset.page;
+                    renderPage(currentPage);
+                    closeSidebar();
+                });
+            });
+
+            document.getElementById('hamburger-btn').addEventListener('click', openSidebar);
+            els.sidebarOverlay.addEventListener('click', closeSidebar);
+            document.getElementById('logout-btn').addEventListener('click', clearSession);
+
+            // Search
+            els.searchInput.addEventListener('input', (e) => {
+                currentSearchTerm = e.target.value.toLowerCase();
+                renderAppContent();
+            });
+
+            // Forms
+            document.getElementById('new-ticket-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const title = document.getElementById('ticket-title').value;
+                const desc = document.getElementById('ticket-desc').value;
+                
+                try {
+                    await addDoc(collection(db, COLL.TICKETS), {
+                        title: title,
+                        description: desc,
+                        status: 'PENDING',
+                        createdAt: serverTimestamp(),
+                        name: currentUser.name,
+                        submitterId: currentUser.id,
+                        affectedUsers: []
+                    });
+                    e.target.reset();
+                    showToast("Issue submitted for review!", "success");
+                    currentPage = 'known'; // Redirect to known (or pending if they could see it)
+                    if(currentUser.role === 'tl') currentPage = 'pending';
+                    renderPage(currentPage);
+                } catch(err) {
+                    showToast("Failed to submit issue", "error");
+                }
+            });
+
+            document.getElementById('affected-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const id = document.getElementById('affected-ticket-id').value;
+                const comments = document.getElementById('affected-comments').value;
+                
+                try {
+                    const ticketRef = doc(db, COLL.TICKETS, id);
+                    const ticketDoc = await getDoc(ticketRef);
+                    const currentAffected = ticketDoc.data().affectedUsers || [];
+                    
+                    const newEntry = {
+                        userId: currentUser.id,
+                        name: currentUser.name,
+                        ein: currentUser.ein,
+                        comments: comments,
+                        timestamp: new Date() // Client time is fine for day-filtering usually
+                    };
+                    
+                    await updateDoc(ticketRef, { affectedUsers: [...currentAffected, newEntry] });
+                    toggleModal('affected-modal', false);
+                    showToast("Report added. Thank you!", "success");
+                    document.getElementById('affected-comments').value = ''; // Reset
+                } catch(err) {
+                    showToast("Error submitting report", "error");
+                }
+            });
+
+            document.getElementById('complete-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const id = document.getElementById('complete-ticket-id').value;
+                const desc = document.getElementById('complete-description').value;
+
+                try {
+                    await updateDoc(doc(db, COLL.TICKETS, id), {
+                        status: 'COMPLETE',
+                        completedAt: serverTimestamp(),
+                        fixDescription: desc,
+                        resolverName: currentUser.name
+                    });
+                    toggleModal('complete-modal', false);
+                    document.getElementById('complete-description').value = '';
+                    showToast("Issue marked as resolved", "success");
+                } catch(err) {
+                    showToast("Error updating issue", "error");
+                }
+            });
+
+            // Login Tabs
+            const guideTab = document.getElementById('guide-tab-btn');
+            const tlTab = document.getElementById('tl-tab-btn');
+            const guideForm = document.getElementById('guide-login-form');
+            const tlForm = document.getElementById('tl-login-form');
+
+            guideTab.addEventListener('click', () => {
+                guideTab.classList.add('bg-white', 'text-primary', 'shadow-sm');
+                guideTab.classList.remove('text-slate-500');
+                tlTab.classList.remove('bg-white', 'text-primary', 'shadow-sm');
+                tlTab.classList.add('text-slate-500');
+                guideForm.classList.remove('hidden');
+                tlForm.classList.add('hidden');
+            });
+
+            tlTab.addEventListener('click', () => {
+                tlTab.classList.add('bg-white', 'text-primary', 'shadow-sm');
+                tlTab.classList.remove('text-slate-500');
+                guideTab.classList.remove('bg-white', 'text-primary', 'shadow-sm');
+                guideTab.classList.add('text-slate-500');
+                tlForm.classList.remove('hidden');
+                guideForm.classList.add('hidden');
+            });
+
+            // Login Submits
+            guideForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const name = document.getElementById('name-input').value;
+                const ein = document.getElementById('ein-input').value;
+                if(name && ein) loginSuccess('guide', name, ein);
+            });
+
+            tlForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const code = document.getElementById('tl-code-input').value;
+                // In a real app, verify code against DB. For single file, assuming code works if exists.
+                // We check the TL Codes collection
+                try {
+                    const docRef = doc(db, COLL.TL_CODES, code);
+                    const docSnap = await getDoc(docRef);
+                    if(docSnap.exists()) {
+                        loginSuccess('tl', docSnap.data().name, null);
+                    } else {
+                        showToast("Invalid Access Code", "error");
+                    }
+                } catch(err) {
+                    // Fallback for demo if DB not set up
+                    if(code === "admin123") loginSuccess('tl', "Demo Admin", null);
+                    else showToast("Verification failed", "error");
+                }
+            });
+            
+            // Modals
+            document.querySelectorAll('.modal-close-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const modal = btn.closest('.modal');
+                    toggleModal(modal.id, false);
+                });
+            });
+        }
+
+        // --- UI HELPERS ---
+
+        function renderPage(pageName) {
+            els.pages.forEach(p => p.classList.add('hidden'));
+            document.getElementById(`page-${pageName}`).classList.remove('hidden');
+            
+            els.headerTitle.textContent = document.querySelector(`button[data-page="${pageName}"]`).textContent.trim();
+            
+            // Highlight Nav
+            els.navLinks.forEach(l => {
+                if(l.dataset.page === pageName) l.classList.add('bg-slate-50', 'text-primary');
+                else l.classList.remove('bg-slate-50', 'text-primary');
+            });
+
+            // Show/Hide Search
+            if(['known', 'completed', 'pending'].includes(pageName)) els.searchContainer.classList.remove('hidden');
+            else els.searchContainer.classList.add('hidden');
+        }
+
+        function openSidebar() {
+            els.sidebar.classList.remove('-translate-x-full');
+            els.sidebarOverlay.classList.remove('opacity-0', 'pointer-events-none');
+        }
+
+        function closeSidebar() {
+            els.sidebar.classList.add('-translate-x-full');
+            els.sidebarOverlay.classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        function toggleModal(modalId, show) {
+            const modal = document.getElementById(modalId);
+            if(show) {
+                els.modalBackdrop.classList.remove('hidden');
+                // small delay to allow display:block to apply before opacity transition
+                setTimeout(() => {
+                    els.modalBackdrop.classList.remove('opacity-0');
+                    modal.classList.add('active');
+                }, 10);
+            } else {
+                modal.classList.remove('active');
+                els.modalBackdrop.classList.add('opacity-0');
+                setTimeout(() => els.modalBackdrop.classList.add('hidden'), 300);
+            }
+        }
+
+        // --- METRICS & UTILS ---
+
+        function updateMetrics(tickets, startOfToday) {
+            let totalAffected = 0;
+            const uniqueUsers = new Set();
+            const issueCounts = [];
+
+            tickets.forEach(t => {
+                if(t.status === 'KNOWN') {
+                    const daily = (t.affectedUsers || []).filter(u => u.timestamp?.toDate() > startOfToday);
+                    totalAffected += daily.length;
+                    daily.forEach(u => uniqueUsers.add(u.name));
+                    if(daily.length > 0) issueCounts.push({ title: t.title, count: daily.length });
+                }
+            });
+
+            // Update DOM
+            document.getElementById('metric-total-affected').textContent = totalAffected;
+            document.getElementById('metric-unique-affected').textContent = uniqueUsers.size;
+
+            // Top 5
+            issueCounts.sort((a,b) => b.count - a.count);
+            const top5 = issueCounts.slice(0, 5);
+            const top5List = document.getElementById('top-5-list');
+            top5List.innerHTML = '';
+            
+            if(top5.length === 0) top5List.innerHTML = '<p class="text-xs text-slate-400">No data available yet today.</p>';
+            else {
+                top5.forEach((item, idx) => {
+                    const row = document.createElement('div');
+                    row.className = 'flex items-center justify-between text-sm border-b border-slate-100 pb-2 last:border-0';
+                    row.innerHTML = `
+                        <div class="flex items-center gap-3">
+                            <span class="font-bold text-slate-300 text-lg">0${idx+1}</span>
+                            <span class="font-medium text-slate-700 truncate max-w-[150px] sm:max-w-xs">${escapeHtml(item.title)}</span>
+                        </div>
+                        <span class="font-bold text-secondary">${item.count}</span>
+                    `;
+                    top5List.appendChild(row);
+                });
+            }
+
+            // Chart
+            if(metricsChart) metricsChart.destroy();
+            const ctx = document.getElementById('metrics-pie-chart').getContext('2d');
+            
+            const labels = top5.map(i => i.title.length > 15 ? i.title.substring(0,15)+'...' : i.title);
+            const data = top5.map(i => i.count);
+            // Add "Other" if needed
+            const otherCount = totalAffected - data.reduce((a,b) => a+b, 0);
+            if(otherCount > 0) { labels.push('Other'); data.push(otherCount); }
+
+            metricsChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: ['#6400aa', '#009ba4', '#a855f7', '#2dd4bf', '#f472b6', '#cbd5e1'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    cutout: '70%'
                 }
             });
         }
 
-        main(); // Run the app
+        function formatTimeAgo(timestamp) {
+            if (!timestamp) return 'Recently';
+            const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+            const seconds = Math.floor((new Date() - date) / 1000);
+            
+            let interval = seconds / 31536000;
+            if (interval > 1) return Math.floor(interval) + "y ago";
+            interval = seconds / 2592000;
+            if (interval > 1) return Math.floor(interval) + "mo ago";
+            interval = seconds / 86400;
+            if (interval > 1) return Math.floor(interval) + "d ago";
+            interval = seconds / 3600;
+            if (interval > 1) return Math.floor(interval) + "h ago";
+            interval = seconds / 60;
+            if (interval > 1) return Math.floor(interval) + "m ago";
+            return "Just now";
+        }
+
+        function escapeHtml(text) {
+            if (!text) return "";
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        // Run
+        init();
     </script>
 </body>
 </html>
